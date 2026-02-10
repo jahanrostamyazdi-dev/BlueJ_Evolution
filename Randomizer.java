@@ -10,7 +10,7 @@ import java.util.Random;
  */
 public class Randomizer
 {
-    // The default seed for control of randomization.
+    // The default seed for control of randomization. 2134
     private static final int SEED = 1111;
     // A shared Random object, if required.
     private static final Random rand = new Random(SEED);
