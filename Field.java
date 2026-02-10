@@ -2,7 +2,7 @@ import java.util.*;
 
 /**
  * Represent a rectangular grid of field positions.
- * Each position is able to store a single animal/object.
+ * Each position is able to store a single dinosaur/object.
  * 
  * @author David J. Barnes and Michael Kölling
  * @version 7.0
@@ -14,10 +14,10 @@ public class Field
     
     // The dimensions of the field.
     private final int depth, width;
-    // Animals mapped by location.
-    private final Map<Location, Animal> field = new HashMap<>();
-    // The animals.
-    private final List<Animal> animals = new ArrayList<>();
+    // Dinosaurs mapped by location.
+    private final Map<Location, Dinosaur> field = new HashMap<>();
+    // The dinosaurs.
+    private final List<Dinosaur> dinosaurs = new ArrayList<>();
 
     /**
      * Represent a field of the given dimensions.
@@ -31,29 +31,29 @@ public class Field
     }
 
     /**
-     * Place an animal at the given location.
-     * If there is already an animal at the location it will
+     * Place a dinosaur at the given location.
+     * If there is already a dinosaur at the location it will
      * be lost.
-     * @param anAnimal The animal to be placed.
-     * @param location Where to place the animal.
+     * @param anDinosaur The dinosaur to be placed.
+     * @param location Where to place the dinosaur.
      */
-    public void placeAnimal(Animal anAnimal, Location location)
+    public void placeDinosaur(Dinosaur anDinosaur, Location location)
     {
         assert location != null;
         Object other = field.get(location);
         if(other != null) {
-            animals.remove(other);
+            dinosaurs.remove(other);
         }
-        field.put(location, anAnimal);
-        animals.add(anAnimal);
+        field.put(location, anDinosaur);
+        dinosaurs.add(anDinosaur);
     }
     
     /**
-     * Return the animal at the given location, if any.
+     * Return the dinosaur at the given location, if any.
      * @param location Where in the field.
-     * @return The animal at the given location, or null if there is none.
+     * @return The dinosaur at the given location, or null if there is none.
      */
-    public Animal getAnimalAt(Location location)
+    public Dinosaur getDinosaurAt(Location location)
     {
         return field.get(location);
     }
@@ -68,11 +68,11 @@ public class Field
         List<Location> free = new LinkedList<>();
         List<Location> adjacent = getAdjacentLocations(location);
         for(Location next : adjacent) {
-            Animal anAnimal = field.get(next);
-            if(anAnimal == null) {
+            Dinosaur anDinosaur = field.get(next);
+            if(anDinosaur == null) {
                 free.add(next);
             }
-            else if(!anAnimal.isAlive()) {
+            else if(!anDinosaur.isAlive()) {
                 free.add(next);
             }
         }
@@ -114,25 +114,25 @@ public class Field
     }
 
     /**
-     * Print out the number of foxes and rabbits in the field.
+     * Print out the number of allosaurs and iguanadons in the field.
      */
     public void fieldStats()
     {
-        int numFoxes = 0, numRabbits = 0;
-        for(Animal anAnimal : field.values()) {
-            if(anAnimal instanceof Fox fox) {
-                if(fox.isAlive()) {
-                    numFoxes++;
+        int numAllosaurs = 0, numIguanadons = 0;
+        for(Dinosaur anDinosaur : field.values()) {
+            if(anDinosaur instanceof Allosaurus allosaurus) {
+                if(allosaurus.isAlive()) {
+                    numAllosaurs++;
                 }
             }
-            else if(anAnimal instanceof Rabbit rabbit) {
-                if(rabbit.isAlive()) {
-                    numRabbits++;
+            else if(anDinosaur instanceof Iguanadon iguanadon) {
+                if(iguanadon.isAlive()) {
+                    numIguanadons++;
                 }
             }
         }
-        System.out.println("Rabbits: " + numRabbits +
-                           " Foxes: " + numFoxes);
+        System.out.println("Iguanadons: " + numIguanadons +
+                           " Allosaurs: " + numAllosaurs);
     }
 
     /**
@@ -144,36 +144,36 @@ public class Field
     }
 
     /**
-     * Return whether there is at least one rabbit and one fox in the field.
-     * @return true if there is at least one rabbit and one fox in the field.
+     * Return whether there is at least one iguanadon and one allosaurus in the field.
+     * @return true if there is at least one iguanadon and one allosaurus in the field.
      */
     public boolean isViable()
     {
-        boolean rabbitFound = false;
-        boolean foxFound = false;
-        Iterator<Animal> it = animals.iterator();
-        while(it.hasNext() && ! (rabbitFound && foxFound)) {
-            Animal anAnimal = it.next();
-            if(anAnimal instanceof Rabbit rabbit) {
-                if(rabbit.isAlive()) {
-                    rabbitFound = true;
+        boolean iguanadonFound = false;
+        boolean allosaurusFound = false;
+        Iterator<Dinosaur> it = dinosaurs.iterator();
+        while(it.hasNext() && ! (iguanadonFound && allosaurusFound)) {
+            Dinosaur anDinosaur = it.next();
+            if(anDinosaur instanceof Iguanadon iguanadon) {
+                if(iguanadon.isAlive()) {
+                    iguanadonFound = true;
                 }
             }
-            else if(anAnimal instanceof Fox fox) {
-                if(fox.isAlive()) {
-                    foxFound = true;
+            else if(anDinosaur instanceof Allosaurus allosaurus) {
+                if(allosaurus.isAlive()) {
+                    allosaurusFound = true;
                 }
             }
         }
-        return rabbitFound && foxFound;
+        return iguanadonFound && allosaurusFound;
     }
     
     /**
-     * Get the list of animals.
+     * Get the list of dinosaurs.
      */
-    public List<Animal> getAnimals()
+    public List<Dinosaur> getDinosaurs()
     {
-        return animals;
+        return dinosaurs;
     }
 
     /**

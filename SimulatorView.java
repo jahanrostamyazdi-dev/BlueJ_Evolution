@@ -41,10 +41,10 @@ public class SimulatorView extends JFrame
     {
         stats = new FieldStats();
         colors = new LinkedHashMap<>();
-        setColor(Rabbit.class, Color.orange);
-        setColor(Fox.class, Color.blue);
+        setColor(Iguanadon.class, Color.orange);
+        setColor(Allosaurus.class, Color.blue);
 
-        setTitle("Fox and Rabbit Simulation");
+        setTitle("Allosaurus and Iguanadon Simulation");
         stepLabel = new JLabel(STEP_PREFIX, JLabel.CENTER);
         population = new JLabel(POPULATION_PREFIX, JLabel.CENTER);
         
@@ -61,21 +61,21 @@ public class SimulatorView extends JFrame
     }
     
     /**
-     * Define a color to be used for a given class of animal.
-     * @param animalClass The animal's Class object.
+     * Define a color to be used for a given class of dinosaur.
+     * @param dinosaurClass The dinosaur's Class object.
      * @param color The color to be used for the given class.
      */
-    public void setColor(Class<?> animalClass, Color color)
+    public void setColor(Class<?> dinosaurClass, Color color)
     {
-        colors.put(animalClass, color);
+        colors.put(dinosaurClass, color);
     }
 
     /**
-     * @return The color to be used for a given class of animal.
+     * @return The color to be used for a given class of dinosaur.
      */
-    private Color getColor(Class<?> animalClass)
+    private Color getColor(Class<?> dinosaurClass)
     {
-        Color col = colors.get(animalClass);
+        Color col = colors.get(dinosaurClass);
         if(col == null) {
             // no color defined for this class
             return UNKNOWN_COLOR;
@@ -103,10 +103,10 @@ public class SimulatorView extends JFrame
 
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
-                Object animal = field.getAnimalAt(new Location(row, col));
-                if(animal != null) {
-                    stats.incrementCount(animal.getClass());
-                    fieldView.drawMark(col, row, getColor(animal.getClass()));
+                Object dinosaur = field.getDinosaurAt(new Location(row, col));
+                if(dinosaur != null) {
+                    stats.incrementCount(dinosaur.getClass());
+                    fieldView.drawMark(col, row, getColor(dinosaur.getClass()));
                 }
                 else {
                     fieldView.drawMark(col, row, EMPTY_COLOR);

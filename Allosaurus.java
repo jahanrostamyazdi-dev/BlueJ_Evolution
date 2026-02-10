@@ -3,44 +3,44 @@ import java.util.Iterator;
 import java.util.Random;
 
 /**
- * A simple model of a fox.
- * Foxes age, move, eat rabbits, and die.
+ * A simple model of an allosaurus.
+ * Allosaurs age, move, eat iguanadons, and die.
  * 
  * @author David J. Barnes and Michael Kölling
  * @version 7.1
  */
-public class Fox extends Animal
+public class Allosaurus extends Dinosaur
 {
-    // Characteristics shared by all foxes (class variables).
-    // The age at which a fox can start to breed.
+    // Characteristics shared by all allosaurs (class variables).
+    // The age at which an allosaurus can start to breed.
     private static final int BREEDING_AGE = 15;
-    // The age to which a fox can live.
+    // The age to which an allosaurus can live.
     private static final int MAX_AGE = 150;
-    // The likelihood of a fox breeding.
+    // The likelihood of an allosaurus breeding.
     private static final double BREEDING_PROBABILITY = 0.08;
     // The maximum number of births.
     private static final int MAX_LITTER_SIZE = 2;
-    // The food value of a single rabbit. In effect, this is the
-    // number of steps a fox can go before it has to eat again.
-    private static final int RABBIT_FOOD_VALUE = 9;
+    // The food value of a single iguanadon. In effect, this is the
+    // number of steps an allosaurus can go before it has to eat again.
+    private static final int IGUANADON_FOOD_VALUE = 9;
     // A shared random number generator to control breeding.
     private static final Random rand = Randomizer.getRandom();
     
     // Individual characteristics (instance fields).
 
-    // The fox's age.
+    // The allosaurus's age.
     private int age;
-    // The fox's food level, which is increased by eating rabbits.
+    // The allosaurus's food level, which is increased by eating iguanadons.
     private int foodLevel;
 
     /**
-     * Create a fox. A fox can be created as a new born (age zero
+     * Create an allosaurus. An allosaurus can be created as a new born (age zero
      * and not hungry) or with a random age and food level.
      * 
-     * @param randomAge If true, the fox will have random age and hunger level.
+     * @param randomAge If true, the allosaurus will have random age and hunger level.
      * @param location The location within the field.
      */
-    public Fox(boolean randomAge, Location location)
+    public Allosaurus(boolean randomAge, Location location)
     {
         super(location);
         if(randomAge) {
@@ -49,12 +49,12 @@ public class Fox extends Animal
         else {
             age = 0;
         }
-        foodLevel = rand.nextInt(RABBIT_FOOD_VALUE);
+        foodLevel = rand.nextInt(IGUANADON_FOOD_VALUE);
     }
     
     /**
-     * This is what the fox does most of the time: it hunts for
-     * rabbits. In the process, it might breed, die of hunger,
+     * This is what the allosaurus does most of the time: it hunts for
+     * iguanadons. In the process, it might breed, die of hunger,
      * or die of old age.
      * @param currentField The field currently occupied.
      * @param nextFieldState The updated field.
@@ -78,7 +78,7 @@ public class Fox extends Animal
             // See if it was possible to move.
             if(nextLocation != null) {
                 setLocation(nextLocation);
-                nextFieldState.placeAnimal(this, nextLocation);
+                nextFieldState.placeDinosaur(this, nextLocation);
             }
             else {
                 // Overcrowding.
@@ -91,7 +91,7 @@ public class Fox extends Animal
 
     @Override
     public String toString() {
-        return "Fox{" +
+        return "Allosaurus{" +
                 "age=" + age +
                 ", alive=" + isAlive() +
                 ", location=" + getLocation() +
@@ -100,7 +100,7 @@ public class Fox extends Animal
     }
 
     /**
-     * Increase the age. This could result in the fox's death.
+     * Increase the age. This could result in the allosaurus's death.
      */
     private void incrementAge()
     {
@@ -111,7 +111,7 @@ public class Fox extends Animal
     }
     
     /**
-     * Make this fox more hungry. This could result in the fox's death.
+     * Make this allosaurus more hungry. This could result in the allosaurus's death.
      */
     private void incrementHunger()
     {
@@ -122,8 +122,8 @@ public class Fox extends Animal
     }
     
     /**
-     * Look for rabbits adjacent to the current location.
-     * Only the first live rabbit is eaten.
+     * Look for iguanadons adjacent to the current location.
+     * Only the first live iguanadon is eaten.
      * @param field The field currently occupied.
      * @return Where food was found, or null if it wasn't.
      */
@@ -134,11 +134,11 @@ public class Fox extends Animal
         Location foodLocation = null;
         while(foodLocation == null && it.hasNext()) {
             Location loc = it.next();
-            Animal animal = field.getAnimalAt(loc);
-            if(animal instanceof Rabbit rabbit) {
-                if(rabbit.isAlive()) {
-                    rabbit.setDead();
-                    foodLevel = RABBIT_FOOD_VALUE;
+            Dinosaur dinosaur = field.getDinosaurAt(loc);
+            if(dinosaur instanceof Iguanadon iguanadon) {
+                if(iguanadon.isAlive()) {
+                    iguanadon.setDead();
+                    foodLevel = IGUANADON_FOOD_VALUE;
                     foodLocation = loc;
                 }
             }
@@ -147,20 +147,20 @@ public class Fox extends Animal
     }
     
     /**
-     * Check whether this fox is to give birth at this step.
+     * Check whether this allosaurus is to give birth at this step.
      * New births will be made into free adjacent locations.
      * @param freeLocations The locations that are free in the current field.
      */
     private void giveBirth(Field nextFieldState, List<Location> freeLocations)
     {
-        // New foxes are born into adjacent locations.
+        // New allosaurs are born into adjacent locations.
         // Get a list of adjacent free locations.
         int births = breed();
         if(births > 0) {
             for (int b = 0; b < births && ! freeLocations.isEmpty(); b++) {
                 Location loc = freeLocations.remove(0);
-                Fox young = new Fox(false, loc);
-                nextFieldState.placeAnimal(young, loc);
+                Allosaurus young = new Allosaurus(false, loc);
+                nextFieldState.placeDinosaur(young, loc);
             }
         }
     }
@@ -183,7 +183,7 @@ public class Fox extends Animal
     }
 
     /**
-     * A fox can breed if it has reached the breeding age.
+     * An allosaurus can breed if it has reached the breeding age.
      */
     private boolean canBreed()
     {

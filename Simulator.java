@@ -2,7 +2,7 @@ import java.util.*;
 
 /**
  * A simple predator-prey simulator, based on a rectangular field containing 
- * rabbits and foxes.
+ * iguanadons and allosaurs.
  * 
  * @author David J. Barnes and Michael Kölling
  * @version 7.1
@@ -14,10 +14,10 @@ public class Simulator
     private static final int DEFAULT_WIDTH = 120;
     // The default depth of the grid.
     private static final int DEFAULT_DEPTH = 80;
-    // The probability that a fox will be created in any given grid position.
-    private static final double FOX_CREATION_PROBABILITY = 0.02;
-    // The probability that a rabbit will be created in any given position.
-    private static final double RABBIT_CREATION_PROBABILITY = 0.08;    
+    // The probability that an allosaurus will be created in any given grid position.
+    private static final double ALLOSAURUS_CREATION_PROBABILITY = 0.02;
+    // The probability that an iguanadon will be created in any given position.
+    private static final double IGUANADON_CREATION_PROBABILITY = 0.08;    
 
     // The current state of the field.
     private Field field;
@@ -79,7 +79,7 @@ public class Simulator
     
     /**
      * Run the simulation from its current state for a single step.
-     * Iterate over the whole field updating the state of each fox and rabbit.
+     * Iterate over the whole field updating the state of each allosaurus and iguanadon.
      */
     public void simulateOneStep()
     {
@@ -88,9 +88,9 @@ public class Simulator
         // the next step.
         Field nextFieldState = new Field(field.getDepth(), field.getWidth());
 
-        List<Animal> animals = field.getAnimals();
-        for (Animal anAnimal : animals) {
-            anAnimal.act(field, nextFieldState);
+        List<Dinosaur> dinosaurs = field.getDinosaurs();
+        for (Dinosaur anDinosaur : dinosaurs) {
+            anDinosaur.act(field, nextFieldState);
         }
         
         // Replace the old state with the new one.
@@ -111,7 +111,7 @@ public class Simulator
     }
     
     /**
-     * Randomly populate the field with foxes and rabbits.
+     * Randomly populate the field with allosaurs and iguanadons.
      */
     private void populate()
     {
@@ -119,15 +119,15 @@ public class Simulator
         field.clear();
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
-                if(rand.nextDouble() <= FOX_CREATION_PROBABILITY) {
+                if(rand.nextDouble() <= ALLOSAURUS_CREATION_PROBABILITY) {
                     Location location = new Location(row, col);
-                    Fox fox = new Fox(true, location);
-                    field.placeAnimal(fox, location);
+                    Allosaurus allosaurus = new Allosaurus(true, location);
+                    field.placeDinosaur(allosaurus, location);
                 }
-                else if(rand.nextDouble() <= RABBIT_CREATION_PROBABILITY) {
+                else if(rand.nextDouble() <= IGUANADON_CREATION_PROBABILITY) {
                     Location location = new Location(row, col);
-                    Rabbit rabbit = new Rabbit(true, location);
-                    field.placeAnimal(rabbit, location);
+                    Iguanadon iguanadon = new Iguanadon(true, location);
+                    field.placeDinosaur(iguanadon, location);
                 }
                 // else leave the location empty.
             }
@@ -135,7 +135,7 @@ public class Simulator
     }
 
     /**
-     * Report on the number of each type of animal in the field.
+     * Report on the number of each type of dinosaur in the field.
      */
     public void reportStats()
     {

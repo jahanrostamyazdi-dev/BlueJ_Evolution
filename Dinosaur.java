@@ -1,22 +1,22 @@
 
 /**
- * Common elements of foxes and rabbits.
+ * Common elements of allosaurs and iguanadons.
  *
  * @author David J. Barnes and Michael Kölling
  * @version 7.0
  */
-public abstract class Animal
+public abstract class Dinosaur
 {
-    // Whether the animal is alive or not.
+    // Whether the dinosaur is alive or not.
     private boolean alive;
-    // The animal's position.
+    // The dinosaur's position.
     private Location location;
 
     /**
-     * Constructor for objects of class Animal.
-     * @param location The animal's location.
+     * Constructor for objects of class Dinosaur.
+     * @param location The dinosaur's location.
      */
-    public Animal(Location location)
+    public Dinosaur(Location location)
     {
         this.alive = true;
         this.location = location;
@@ -30,8 +30,8 @@ public abstract class Animal
     abstract public void act(Field currentField, Field nextFieldState);
     
     /**
-     * Check whether the animal is alive or not.
-     * @return true if the animal is still alive.
+     * Check whether the dinosaur is alive or not.
+     * @return true if the dinosaur is still alive.
      */
     public boolean isAlive()
     {
@@ -39,7 +39,7 @@ public abstract class Animal
     }
 
     /**
-     * Indicate that the animal is no longer alive.
+     * Indicate that the dinosaur is no longer alive.
      */
     protected void setDead()
     {
@@ -48,8 +48,8 @@ public abstract class Animal
     }
     
     /**
-     * Return the animal's location.
-     * @return The animal's location.
+     * Return the dinosaur's location.
+     * @return The dinosaur's location.
      */
     public Location getLocation()
     {
@@ -57,7 +57,7 @@ public abstract class Animal
     }
     
     /**
-     * Set the animal's location.
+     * Set the dinosaur's location.
      * @param location The new location.
      */
     protected void setLocation(Location location)
