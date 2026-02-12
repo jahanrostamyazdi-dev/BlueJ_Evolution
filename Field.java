@@ -141,6 +141,7 @@ public class Field
     public void clear()
     {
         field.clear();
+        dinosaurs.clear();
     }
 
     /**
