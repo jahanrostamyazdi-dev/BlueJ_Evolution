@@ -41,9 +41,17 @@ public class SimulatorView extends JFrame
     {
         stats = new FieldStats();
         colors = new LinkedHashMap<>();
-        setColor(Iguanadon.class, Color.orange);
+        
+        //Carni colours
         setColor(Allosaurus.class, Color.blue);
+        setColor(Carnotaurus.class, Color.red);
+        setColor(Dilophosaurus.class, Color.magenta);
 
+        //Herbi colours
+        setColor(Diabloceratops.class, Color.green);
+        setColor(Ankylosaurus.class, Color.black);
+        setColor(Iguanadon.class, Color.orange);
+        
         setTitle("Allosaurus and Iguanadon Simulation");
         stepLabel = new JLabel(STEP_PREFIX, JLabel.CENTER);
         population = new JLabel(POPULATION_PREFIX, JLabel.CENTER);

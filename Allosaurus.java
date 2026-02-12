@@ -9,7 +9,7 @@ import java.util.Random;
  * @author David J. Barnes and Michael Kölling
  * @version 7.1
  */
-public class Allosaurus extends Dinosaur
+public class Allosaurus extends Carnivore
 {
     // Characteristics shared by all allosaurs (class variables).
     // The age at which an allosaurus can start to breed.

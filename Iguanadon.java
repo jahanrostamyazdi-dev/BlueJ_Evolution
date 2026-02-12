@@ -8,7 +8,7 @@ import java.util.Random;
  * @author David J. Barnes and Michael Kölling
  * @version 7.1
  */
-public class Iguanadon extends Dinosaur
+public class Iguanadon extends Herbivore
 {
     // Characteristics shared by all iguanadons (class variables).
     // The age at which an iguanadon can start to breed.

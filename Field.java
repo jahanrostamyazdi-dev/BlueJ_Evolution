@@ -118,21 +118,17 @@ public class Field
      */
     public void fieldStats()
     {
-        int numAllosaurs = 0, numIguanadons = 0;
-        for(Dinosaur anDinosaur : field.values()) {
-            if(anDinosaur instanceof Allosaurus allosaurus) {
-                if(allosaurus.isAlive()) {
-                    numAllosaurs++;
-                }
-            }
-            else if(anDinosaur instanceof Iguanadon iguanadon) {
-                if(iguanadon.isAlive()) {
-                    numIguanadons++;
-                }
+        int carnivores = 0;
+        int herbivores = 0;
+    
+        for(Dinosaur d : field.values()) {
+            if(d != null && d.isAlive()) {
+                if(d instanceof Carnivore) carnivores++;
+                if(d instanceof Herbivore) herbivores++;
             }
         }
-        System.out.println("Iguanadons: " + numIguanadons +
-                           " Allosaurs: " + numAllosaurs);
+    
+        System.out.println("Herbivores: " + herbivores + " Carnivores: " + carnivores);
     }
 
     /**
@@ -150,23 +146,18 @@ public class Field
      */
     public boolean isViable()
     {
-        boolean iguanadonFound = false;
-        boolean allosaurusFound = false;
-        Iterator<Dinosaur> it = dinosaurs.iterator();
-        while(it.hasNext() && ! (iguanadonFound && allosaurusFound)) {
-            Dinosaur anDinosaur = it.next();
-            if(anDinosaur instanceof Iguanadon iguanadon) {
-                if(iguanadon.isAlive()) {
-                    iguanadonFound = true;
-                }
+        boolean herbivoreFound = false;
+        boolean carnivoreFound = false;
+    
+        for(Dinosaur d : dinosaurs) {
+            if(d != null && d.isAlive()) {
+                if(d instanceof Herbivore) herbivoreFound = true;
+                else if(d instanceof Carnivore) carnivoreFound = true;
             }
-            else if(anDinosaur instanceof Allosaurus allosaurus) {
-                if(allosaurus.isAlive()) {
-                    allosaurusFound = true;
-                }
-            }
+            if(herbivoreFound && carnivoreFound) break;
         }
-        return iguanadonFound && allosaurusFound;
+    
+        return herbivoreFound && carnivoreFound;
     }
     
     /**

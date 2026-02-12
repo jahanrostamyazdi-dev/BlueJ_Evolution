@@ -14,10 +14,15 @@ public class Simulator
     private static final int DEFAULT_WIDTH = 120;
     // The default depth of the grid.
     private static final int DEFAULT_DEPTH = 80;
-    // The probability that an allosaurus will be created in any given grid position.
-    private static final double ALLOSAURUS_CREATION_PROBABILITY = 0.02;
-    // The probability that an iguanadon will be created in any given position.
-    private static final double IGUANADON_CREATION_PROBABILITY = 0.08;    
+    
+    //Carnivore creation probabilities
+    private static final double ALLOSAURUS_CREATION_PROBABILITY = 0.010;
+    private static final double CARNOTAURUS_CREATION_PROBABILITY = 0.008;
+    private static final double DILOPHOSAURUS_CREATION_PROBABILITY = 0.010;
+    //Herbivores creation probabilities
+    private static final double IGUANADON_CREATION_PROBABILITY = 0.060;
+    private static final double DIABLOCERATOPS_CREATION_PROBABILITY = 0.020;
+    private static final double ANKYLOSAURUS_CREATION_PROBABILITY = 0.015;
 
     // The current state of the field.
     private Field field;
@@ -111,25 +116,43 @@ public class Simulator
     }
     
     /**
-     * Randomly populate the field with allosaurs and iguanadons.
+     * Randomly populate the field with dinosaurs.
      */
     private void populate()
     {
         Random rand = Randomizer.getRandom();
         field.clear();
+    
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
-                if(rand.nextDouble() <= ALLOSAURUS_CREATION_PROBABILITY) {
-                    Location location = new Location(row, col);
-                    Allosaurus allosaurus = new Allosaurus(true, location);
-                    field.placeDinosaur(allosaurus, location);
+                double prob = rand.nextDouble();
+                Location location = new Location(row, col);
+    
+                // Predators (smaller total probability)
+                if(prob <= ALLOSAURUS_CREATION_PROBABILITY) {
+                    field.placeDinosaur(new Allosaurus(true, location), location);
                 }
-                else if(rand.nextDouble() <= IGUANADON_CREATION_PROBABILITY) {
-                    Location location = new Location(row, col);
-                    Iguanadon iguanadon = new Iguanadon(true, location);
-                    field.placeDinosaur(iguanadon, location);
+                else if(prob <= ALLOSAURUS_CREATION_PROBABILITY + CARNOTAURUS_CREATION_PROBABILITY) {
+                    field.placeDinosaur(new Carnotaurus(true, location), location);
                 }
-                // else leave the location empty.
+                else if(prob <= ALLOSAURUS_CREATION_PROBABILITY + CARNOTAURUS_CREATION_PROBABILITY + DILOPHOSAURUS_CREATION_PROBABILITY) {
+                    field.placeDinosaur(new Dilophosaurus(true, location), location);
+                }
+    
+                // Herbivores
+                else if(prob <= ALLOSAURUS_CREATION_PROBABILITY + CARNOTAURUS_CREATION_PROBABILITY + DILOPHOSAURUS_CREATION_PROBABILITY
+                              + IGUANADON_CREATION_PROBABILITY) {
+                    field.placeDinosaur(new Iguanadon(true, location), location);
+                }
+                else if(prob <= ALLOSAURUS_CREATION_PROBABILITY + CARNOTAURUS_CREATION_PROBABILITY + DILOPHOSAURUS_CREATION_PROBABILITY
+                              + IGUANADON_CREATION_PROBABILITY + DIABLOCERATOPS_CREATION_PROBABILITY) {
+                    field.placeDinosaur(new Diabloceratops(true, location), location);
+                }
+                else if(prob <= ALLOSAURUS_CREATION_PROBABILITY + CARNOTAURUS_CREATION_PROBABILITY + DILOPHOSAURUS_CREATION_PROBABILITY
+                              + IGUANADON_CREATION_PROBABILITY + DIABLOCERATOPS_CREATION_PROBABILITY + ANKYLOSAURUS_CREATION_PROBABILITY) {
+                    field.placeDinosaur(new Ankylosaurus(true, location), location);
+                }
+                // else leave empty
             }
         }
     }
