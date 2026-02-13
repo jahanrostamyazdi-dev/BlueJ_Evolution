@@ -1,10 +1,6 @@
 import java.util.List;
 import java.util.Random;
 
-/**
- * A simple model of an ankylosaurus.
- * Ankylosaurs age, move, breed, and die.
- */
 public class Ankylosaurus extends Herbivore
 {
     private static final int BREEDING_AGE = 12;
@@ -12,17 +8,20 @@ public class Ankylosaurus extends Herbivore
     private static final double BREEDING_PROBABILITY = 0.07;
     private static final int MAX_LITTER_SIZE = 1;
 
+    private static final int MAX_ENERGY = 28;
+
     private static final Random rand = Randomizer.getRandom();
 
     private int age;
 
     public Ankylosaurus(boolean randomAge, Location location)
     {
-        super(location);
+        super(location, MAX_ENERGY);
         age = 0;
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
         }
+        restoreToFullEnergy();
     }
 
     public void act(Field currentField, Field nextFieldState)
@@ -30,7 +29,7 @@ public class Ankylosaurus extends Herbivore
         incrementAge();
         if(isAlive()) {
             List<Location> freeLocations =
-                    nextFieldState.getFreeAdjacentLocations(getLocation());
+                nextFieldState.getFreeAdjacentLocations(getLocation());
 
             if(!freeLocations.isEmpty()) {
                 giveBirth(nextFieldState, freeLocations);

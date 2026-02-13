@@ -8,9 +8,10 @@ public abstract class Carnivore extends Dinosaur
     /**
      * Create a carnivore at a location.
      * @param location The carnivore's starting location.
+     * @param maxEnergy Maximum energy for this carnivore.
      */
-    public Carnivore(Location location)
+    public Carnivore(Location location, int maxEnergy)
     {
-        super(location);
+        super(location, maxEnergy);
     }
 }

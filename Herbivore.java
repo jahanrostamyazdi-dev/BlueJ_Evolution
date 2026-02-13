@@ -8,9 +8,10 @@ public abstract class Herbivore extends Dinosaur
     /**
      * Create a herbivore at a location.
      * @param location The herbivore's starting location.
+     * @param maxEnergy Maximum energy for this herbivore.
      */
-    public Herbivore(Location location)
+    public Herbivore(Location location, int maxEnergy)
     {
-        super(location);
+        super(location, maxEnergy);
     }
 }

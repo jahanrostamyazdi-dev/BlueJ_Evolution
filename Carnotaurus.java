@@ -4,43 +4,44 @@ import java.util.Random;
 
 /**
  * A simple model of a carnotaurus.
- * Carnotauruses age, move, eat herbivores, and die.
+ * Carnotauruses age, move, eat iguanadons, and die.
  */
 public class Carnotaurus extends Carnivore
 {
-    // Shared characteristics (class variables).
     private static final int BREEDING_AGE = 12;
     private static final int MAX_AGE = 120;
     private static final double BREEDING_PROBABILITY = 0.07;
     private static final int MAX_LITTER_SIZE = 2;
 
-    // Food value of a single herbivore meal.
-    private static final int HERBIVORE_FOOD_VALUE = 8;
+    // Max energy for Carnotaurus (and restored on eating).
+    private static final int FOOD_VALUE = 8;
 
     private static final Random rand = Randomizer.getRandom();
 
-    // Individual characteristics.
     private int age;
-    private int foodLevel;
 
     public Carnotaurus(boolean randomAge, Location location)
     {
-        super(location);
+        super(location, FOOD_VALUE);
+
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
+            setEnergy(rand.nextInt(getMaxEnergy()) + 1);
         } else {
             age = 0;
+            restoreToFullEnergy();
         }
-        foodLevel = rand.nextInt(HERBIVORE_FOOD_VALUE);
     }
 
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();
-        incrementHunger();
+        consumeEnergy(1);
+
         if(isAlive()) {
             List<Location> freeLocations =
-                    nextFieldState.getFreeAdjacentLocations(getLocation());
+                nextFieldState.getFreeAdjacentLocations(getLocation());
+
             if(!freeLocations.isEmpty()) {
                 giveBirth(nextFieldState, freeLocations);
             }
@@ -67,33 +68,21 @@ public class Carnotaurus extends Carnivore
         }
     }
 
-    private void incrementHunger()
-    {
-        foodLevel--;
-        if(foodLevel <= 0) {
-            setDead();
-        }
-    }
-
-    /**
-     * Look for herbivores adjacent to the current location.
-     * Only the first live herbivore is eaten.
-     */
     private Location findFood(Field field)
     {
         List<Location> adjacent = field.getAdjacentLocations(getLocation());
         Iterator<Location> it = adjacent.iterator();
         Location foodLocation = null;
-    
+
         while(foodLocation == null && it.hasNext()) {
             Location loc = it.next();
             Dinosaur dinosaur = field.getDinosaurAt(loc);
-    
+
             // Carnotaurus hunts Iguanadon only.
             if(dinosaur instanceof Iguanadon iguanadon) {
                 if(iguanadon.isAlive()) {
                     iguanadon.setDead();
-                    foodLevel = HERBIVORE_FOOD_VALUE;
+                    restoreToFullEnergy();
                     foodLocation = loc;
                 }
             }

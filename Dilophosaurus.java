@@ -4,7 +4,7 @@ import java.util.Random;
 
 /**
  * A simple model of a dilophosaurus.
- * Dilophosaurs age, move, eat herbivores, and die.
+ * Dilophosaurs age, move, eat iguanadons, and die.
  */
 public class Dilophosaurus extends Carnivore
 {
@@ -13,31 +13,34 @@ public class Dilophosaurus extends Carnivore
     private static final double BREEDING_PROBABILITY = 0.09;
     private static final int MAX_LITTER_SIZE = 3;
 
-    private static final int HERBIVORE_FOOD_VALUE = 7;
+    private static final int FOOD_VALUE = 7;
 
     private static final Random rand = Randomizer.getRandom();
 
     private int age;
-    private int foodLevel;
 
     public Dilophosaurus(boolean randomAge, Location location)
     {
-        super(location);
+        super(location, FOOD_VALUE);
+
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
+            setEnergy(rand.nextInt(getMaxEnergy()) + 1);
         } else {
             age = 0;
+            restoreToFullEnergy();
         }
-        foodLevel = rand.nextInt(HERBIVORE_FOOD_VALUE);
     }
 
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();
-        incrementHunger();
+        consumeEnergy(1);
+
         if(isAlive()) {
             List<Location> freeLocations =
-                    nextFieldState.getFreeAdjacentLocations(getLocation());
+                nextFieldState.getFreeAdjacentLocations(getLocation());
+
             if(!freeLocations.isEmpty()) {
                 giveBirth(nextFieldState, freeLocations);
             }
@@ -64,29 +67,21 @@ public class Dilophosaurus extends Carnivore
         }
     }
 
-    private void incrementHunger()
-    {
-        foodLevel--;
-        if(foodLevel <= 0) {
-            setDead();
-        }
-    }
-
     private Location findFood(Field field)
     {
         List<Location> adjacent = field.getAdjacentLocations(getLocation());
         Iterator<Location> it = adjacent.iterator();
         Location foodLocation = null;
-    
+
         while(foodLocation == null && it.hasNext()) {
             Location loc = it.next();
             Dinosaur dinosaur = field.getDinosaurAt(loc);
-    
+
             // Dilophosaurus hunts Iguanadon only (for now).
             if(dinosaur instanceof Iguanadon iguanadon) {
                 if(iguanadon.isAlive()) {
                     iguanadon.setDead();
-                    foodLevel = HERBIVORE_FOOD_VALUE;
+                    restoreToFullEnergy();
                     foodLocation = loc;
                 }
             }
