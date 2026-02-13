@@ -83,7 +83,7 @@ public class SimulatorView extends JFrame
         boolean night = (timeOfDay == TimeOfDay.NIGHT);
     
         setTitle("Dinosaur Ecosystem Simulation (" + timeOfDay + ", " + weather + ")");
-        stepLabel.setForeground(night ? NIGHT_TEXT_COLOR : Color.black);
+        stepLabel.setForeground(Color.black);
         stepLabel.setText("Step: " + step + " | " + timeOfDay + " | Weather: " + weather);
     
         stats.reset();
