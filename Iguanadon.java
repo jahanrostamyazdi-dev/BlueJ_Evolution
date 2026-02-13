@@ -1,10 +1,6 @@
 import java.util.List;
 import java.util.Random;
 
-/**
- * A simple model of an iguanadon.
- * Iguanadons age, move, breed, and die.
- */
 public class Iguanadon extends Herbivore
 {
     private static final int BREEDING_AGE = 5;
@@ -12,8 +8,9 @@ public class Iguanadon extends Herbivore
     private static final double BREEDING_PROBABILITY = 0.12;
     private static final int MAX_LITTER_SIZE = 4;
 
-    // Herbivore max energy for now (used later for breeding thresholds, disease, plants).
     private static final int MAX_ENERGY = 20;
+    private static final int BREEDING_ENERGY_THRESHOLD = 12; // must have >= this to breed
+    private static final int ENERGY_COST_PER_BABY = 2;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -26,7 +23,6 @@ public class Iguanadon extends Herbivore
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
         }
-        // For now herbivores start full energy and do not spend it yet (plants come later).
         restoreToFullEnergy();
     }
 
@@ -36,9 +32,11 @@ public class Iguanadon extends Herbivore
         if(isAlive()) {
             List<Location> freeLocations =
                 nextFieldState.getFreeAdjacentLocations(getLocation());
+
             if(!freeLocations.isEmpty()) {
-                giveBirth(nextFieldState, freeLocations);
+                giveBirth(currentField, nextFieldState, freeLocations);
             }
+
             if(!freeLocations.isEmpty()) {
                 Location nextLocation = freeLocations.get(0);
                 setLocation(nextLocation);
@@ -58,11 +56,14 @@ public class Iguanadon extends Herbivore
         }
     }
 
-    private void giveBirth(Field nextFieldState, List<Location> freeLocations)
+    private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)
     {
-        int births = breed();
+        int births = breed(currentField);
         if(births > 0) {
-            for(int b = 0; b < births && !freeLocations.isEmpty(); b++) {
+            // Energy cost to the mother
+            consumeEnergy(births * ENERGY_COST_PER_BABY);
+
+            for(int b = 0; b < births && !freeLocations.isEmpty() && isAlive(); b++) {
                 Location loc = freeLocations.remove(0);
                 Iguanadon young = new Iguanadon(false, loc);
                 nextFieldState.placeDinosaur(young, loc);
@@ -70,9 +71,17 @@ public class Iguanadon extends Herbivore
         }
     }
 
-    private int breed()
+    private int breed(Field currentField)
     {
-        if(canBreed() && rand.nextDouble() <= BREEDING_PROBABILITY) {
+        // Only females can give birth.
+        if(!isFemale()) return 0;
+
+        // Must be mature, healthy enough, and have an adjacent male.
+        if(!canBreed()) return 0;
+        if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;
+        if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
+
+        if(rand.nextDouble() <= BREEDING_PROBABILITY) {
             return rand.nextInt(MAX_LITTER_SIZE) + 1;
         }
         return 0;

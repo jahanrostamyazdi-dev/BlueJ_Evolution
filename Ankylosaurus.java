@@ -9,6 +9,8 @@ public class Ankylosaurus extends Herbivore
     private static final int MAX_LITTER_SIZE = 1;
 
     private static final int MAX_ENERGY = 28;
+    private static final int BREEDING_ENERGY_THRESHOLD = 18;
+    private static final int ENERGY_COST_PER_BABY = 4;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -32,7 +34,7 @@ public class Ankylosaurus extends Herbivore
                 nextFieldState.getFreeAdjacentLocations(getLocation());
 
             if(!freeLocations.isEmpty()) {
-                giveBirth(nextFieldState, freeLocations);
+                giveBirth(currentField, nextFieldState, freeLocations);
             }
 
             if(!freeLocations.isEmpty()) {
@@ -53,11 +55,13 @@ public class Ankylosaurus extends Herbivore
         }
     }
 
-    private void giveBirth(Field nextFieldState, List<Location> freeLocations)
+    private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)
     {
-        int births = breed();
+        int births = breed(currentField);
         if(births > 0) {
-            for(int b = 0; b < births && !freeLocations.isEmpty(); b++) {
+            consumeEnergy(births * ENERGY_COST_PER_BABY);
+
+            for(int b = 0; b < births && !freeLocations.isEmpty() && isAlive(); b++) {
                 Location loc = freeLocations.remove(0);
                 Ankylosaurus young = new Ankylosaurus(false, loc);
                 nextFieldState.placeDinosaur(young, loc);
@@ -65,10 +69,15 @@ public class Ankylosaurus extends Herbivore
         }
     }
 
-    private int breed()
+    private int breed(Field currentField)
     {
-        if(canBreed() && rand.nextDouble() <= BREEDING_PROBABILITY) {
-            return rand.nextInt(MAX_LITTER_SIZE) + 1;
+        if(!isFemale()) return 0;
+        if(!canBreed()) return 0;
+        if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;
+        if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
+
+        if(rand.nextDouble() <= BREEDING_PROBABILITY) {
+            return 1; // max litter size is 1 anyway
         }
         return 0;
     }

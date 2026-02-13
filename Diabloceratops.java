@@ -9,6 +9,8 @@ public class Diabloceratops extends Herbivore
     private static final int MAX_LITTER_SIZE = 2;
 
     private static final int MAX_ENERGY = 24;
+    private static final int BREEDING_ENERGY_THRESHOLD = 14;
+    private static final int ENERGY_COST_PER_BABY = 3;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -32,7 +34,7 @@ public class Diabloceratops extends Herbivore
                 nextFieldState.getFreeAdjacentLocations(getLocation());
 
             if(!freeLocations.isEmpty()) {
-                giveBirth(nextFieldState, freeLocations);
+                giveBirth(currentField, nextFieldState, freeLocations);
             }
 
             if(!freeLocations.isEmpty()) {
@@ -53,11 +55,13 @@ public class Diabloceratops extends Herbivore
         }
     }
 
-    private void giveBirth(Field nextFieldState, List<Location> freeLocations)
+    private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)
     {
-        int births = breed();
+        int births = breed(currentField);
         if(births > 0) {
-            for(int b = 0; b < births && !freeLocations.isEmpty(); b++) {
+            consumeEnergy(births * ENERGY_COST_PER_BABY);
+
+            for(int b = 0; b < births && !freeLocations.isEmpty() && isAlive(); b++) {
                 Location loc = freeLocations.remove(0);
                 Diabloceratops young = new Diabloceratops(false, loc);
                 nextFieldState.placeDinosaur(young, loc);
@@ -65,9 +69,14 @@ public class Diabloceratops extends Herbivore
         }
     }
 
-    private int breed()
+    private int breed(Field currentField)
     {
-        if(canBreed() && rand.nextDouble() <= BREEDING_PROBABILITY) {
+        if(!isFemale()) return 0;
+        if(!canBreed()) return 0;
+        if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;
+        if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
+
+        if(rand.nextDouble() <= BREEDING_PROBABILITY) {
             return rand.nextInt(MAX_LITTER_SIZE) + 1;
         }
         return 0;

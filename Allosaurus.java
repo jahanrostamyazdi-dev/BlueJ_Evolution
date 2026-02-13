@@ -2,39 +2,32 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A simple model of an allosaurus.
- * Allosaurs age, move, eat herbivores, and die.
- */
 public class Allosaurus extends Carnivore
 {
-    // Characteristics shared by all allosaurs (class variables).
     private static final int BREEDING_AGE = 15;
     private static final int MAX_AGE = 150;
     private static final double BREEDING_PROBABILITY = 0.08;
     private static final int MAX_LITTER_SIZE = 2;
 
-    // Energy gained from a successful meal (also acts as max energy for now).
-    private static final int IGUANADON_FOOD_VALUE = 9;
+    private static final int FOOD_VALUE = 18;
+    private static final int BREEDING_ENERGY_THRESHOLD = 6;
+    private static final int ENERGY_COST_PER_BABY = 2;
 
-    // Chance to successfully kill Ankylosaurus (armoured prey).
     private static final double ANKYLO_KILL_CHANCE = 0.20;
 
     private static final Random rand = Randomizer.getRandom();
 
-    // Individual characteristics.
     private int age;
 
     public Allosaurus(boolean randomAge, Location location)
     {
-        super(location, IGUANADON_FOOD_VALUE);
+        super(location, FOOD_VALUE);
 
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
-            // Random starting energy so predators don't all start identical.
-            setEnergy(rand.nextInt(getMaxEnergy()) + 1); // 1..maxEnergy
-        }
-        else {
+            int minStart = (int)(getMaxEnergy() * 0.60);
+            setEnergy(minStart + rand.nextInt(getMaxEnergy() - minStart + 1));
+        } else {
             age = 0;
             restoreToFullEnergy();
         }
@@ -43,14 +36,14 @@ public class Allosaurus extends Carnivore
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();
-        consumeEnergy(1); // hunger / energy drain per step
+        consumeEnergy(1);
 
         if(isAlive()) {
             List<Location> freeLocations =
                 nextFieldState.getFreeAdjacentLocations(getLocation());
 
             if(!freeLocations.isEmpty()) {
-                giveBirth(nextFieldState, freeLocations);
+                giveBirth(currentField, nextFieldState, freeLocations);
             }
 
             Location nextLocation = findFood(currentField);
@@ -61,8 +54,7 @@ public class Allosaurus extends Carnivore
             if(nextLocation != null) {
                 setLocation(nextLocation);
                 nextFieldState.placeDinosaur(this, nextLocation);
-            }
-            else {
+            } else {
                 setDead();
             }
         }
@@ -76,9 +68,6 @@ public class Allosaurus extends Carnivore
         }
     }
 
-    /**
-     * Look for prey adjacent to the current location.
-     */
     private Location findFood(Field field)
     {
         List<Location> adjacent = field.getAdjacentLocations(getLocation());
@@ -89,38 +78,34 @@ public class Allosaurus extends Carnivore
             Location loc = it.next();
             Dinosaur dinosaur = field.getDinosaurAt(loc);
 
-            if(dinosaur instanceof Iguanadon iguanadon) {
-                if(iguanadon.isAlive()) {
-                    iguanadon.setDead();
+            if(dinosaur instanceof Iguanadon iguanadon && iguanadon.isAlive()) {
+                iguanadon.setDead();
+                restoreToFullEnergy();
+                foodLocation = loc;
+            }
+            else if(dinosaur instanceof Diabloceratops diabloceratops && diabloceratops.isAlive()) {
+                diabloceratops.setDead();
+                restoreToFullEnergy();
+                foodLocation = loc;
+            }
+            else if(dinosaur instanceof Ankylosaurus ankylosaurus && ankylosaurus.isAlive()) {
+                if(rand.nextDouble() <= ANKYLO_KILL_CHANCE) {
+                    ankylosaurus.setDead();
                     restoreToFullEnergy();
                     foodLocation = loc;
-                }
-            }
-            else if(dinosaur instanceof Diabloceratops diabloceratops) {
-                if(diabloceratops.isAlive()) {
-                    diabloceratops.setDead();
-                    restoreToFullEnergy();
-                    foodLocation = loc;
-                }
-            }
-            else if(dinosaur instanceof Ankylosaurus ankylosaurus) {
-                if(ankylosaurus.isAlive()) {
-                    if(rand.nextDouble() <= ANKYLO_KILL_CHANCE) {
-                        ankylosaurus.setDead();
-                        restoreToFullEnergy();
-                        foodLocation = loc;
-                    }
                 }
             }
         }
         return foodLocation;
     }
 
-    private void giveBirth(Field nextFieldState, List<Location> freeLocations)
+    private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)
     {
-        int births = breed();
+        int births = breed(currentField);
         if(births > 0) {
-            for(int b = 0; b < births && !freeLocations.isEmpty(); b++) {
+            consumeEnergy(births * ENERGY_COST_PER_BABY);
+
+            for(int b = 0; b < births && !freeLocations.isEmpty() && isAlive(); b++) {
                 Location loc = freeLocations.remove(0);
                 Allosaurus young = new Allosaurus(false, loc);
                 nextFieldState.placeDinosaur(young, loc);
@@ -128,9 +113,14 @@ public class Allosaurus extends Carnivore
         }
     }
 
-    private int breed()
+    private int breed(Field currentField)
     {
-        if(canBreed() && rand.nextDouble() <= BREEDING_PROBABILITY) {
+        if(!isFemale()) return 0;
+        if(!canBreed()) return 0;
+        if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;
+        if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
+
+        if(rand.nextDouble() <= BREEDING_PROBABILITY) {
             return rand.nextInt(MAX_LITTER_SIZE) + 1;
         }
         return 0;

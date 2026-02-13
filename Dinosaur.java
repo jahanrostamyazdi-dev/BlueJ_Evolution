@@ -1,10 +1,13 @@
+import java.util.List;
+import java.util.Random;
+
 /**
  * Common elements of all dinosaurs.
  *
- * Adds a shared energy system:
- * - energy decreases when an animal spends energy (predators each step for now)
- * - if energy reaches 0, the dinosaur dies
- * - energy can be restored when eating (predators) or later by plants (herbivores)
+ * Shared systems:
+ * - Energy (0..maxEnergy)
+ * - Sex (MALE/FEMALE) assigned at birth
+ * - Utility method to check for adjacent male of same species
  */
 public abstract class Dinosaur
 {
@@ -17,6 +20,12 @@ public abstract class Dinosaur
     private final int maxEnergy;
     private int energy;
 
+    // Sex system
+    private final Sex sex;
+
+    // Shared random generator
+    private static final Random rand = Randomizer.getRandom();
+
     /**
      * Constructor for objects of class Dinosaur.
      * @param location The dinosaur's location.
@@ -27,7 +36,10 @@ public abstract class Dinosaur
         this.alive = true;
         this.location = location;
         this.maxEnergy = maxEnergy;
-        this.energy = maxEnergy; // default start fully energised
+        this.energy = maxEnergy;
+
+        // Assign a random sex at birth.
+        this.sex = rand.nextBoolean() ? Sex.MALE : Sex.FEMALE;
     }
 
     /**
@@ -37,37 +49,22 @@ public abstract class Dinosaur
      */
     public abstract void act(Field currentField, Field nextFieldState);
 
-    /**
-     * Check whether the dinosaur is alive or not.
-     * @return true if the dinosaur is still alive.
-     */
     public boolean isAlive()
     {
         return alive;
     }
 
-    /**
-     * Indicate that the dinosaur is no longer alive.
-     */
     protected void setDead()
     {
         alive = false;
         location = null;
     }
 
-    /**
-     * Return the dinosaur's location.
-     * @return The dinosaur's location.
-     */
     public Location getLocation()
     {
         return location;
     }
 
-    /**
-     * Set the dinosaur's location.
-     * @param location The new location.
-     */
     protected void setLocation(Location location)
     {
         this.location = location;
@@ -77,26 +74,16 @@ public abstract class Dinosaur
     // Energy API (shared)
     // -------------------------
 
-    /**
-     * @return current energy (0..maxEnergy)
-     */
     public int getEnergy()
     {
         return energy;
     }
 
-    /**
-     * @return maximum energy
-     */
     public int getMaxEnergy()
     {
         return maxEnergy;
     }
 
-    /**
-     * Set energy directly (clamped to 0..maxEnergy).
-     * If energy becomes 0, the dinosaur dies.
-     */
     protected void setEnergy(int newEnergy)
     {
         energy = Math.min(maxEnergy, Math.max(0, newEnergy));
@@ -105,30 +92,57 @@ public abstract class Dinosaur
         }
     }
 
-    /**
-     * Reduce energy by a positive amount.
-     * If energy becomes 0, the dinosaur dies.
-     */
     protected void consumeEnergy(int amount)
     {
         if(amount <= 0) return;
         setEnergy(energy - amount);
     }
 
-    /**
-     * Increase energy by a positive amount, up to maxEnergy.
-     */
     protected void gainEnergy(int amount)
     {
         if(amount <= 0) return;
         setEnergy(energy + amount);
     }
 
-    /**
-     * Fully restore energy (used by predators after eating).
-     */
     protected void restoreToFullEnergy()
     {
         setEnergy(maxEnergy);
+    }
+
+    // -------------------------
+    // Sex API (shared)
+    // -------------------------
+
+    public Sex getSex()
+    {
+        return sex;
+    }
+
+    public boolean isMale()
+    {
+        return sex == Sex.MALE;
+    }
+
+    public boolean isFemale()
+    {
+        return sex == Sex.FEMALE;
+    }
+
+    /**
+     * Returns true if there is at least one adjacent MALE dinosaur
+     * of the same species (same class) in the CURRENT field.
+     */
+    protected boolean hasAdjacentMaleOfSameSpecies(Field currentField)
+    {
+        List<Location> adjacent = currentField.getAdjacentLocations(getLocation());
+        for(Location loc : adjacent) {
+            Dinosaur d = currentField.getDinosaurAt(loc);
+            if(d != null && d.isAlive()) {
+                if(d.getClass() == this.getClass() && d.isMale()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

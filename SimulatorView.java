@@ -48,8 +48,8 @@ public class SimulatorView extends JFrame
         setColor(Dilophosaurus.class, Color.magenta);
 
         //Herbi colours
-        setColor(Diabloceratops.class, Color.green);
-        setColor(Ankylosaurus.class, Color.black);
+        setColor(Diabloceratops.class, Color.yellow);
+        setColor(Ankylosaurus.class, Color.pink);
         setColor(Iguanadon.class, Color.orange);
         
         setTitle("Allosaurus and Iguanadon Simulation");
@@ -111,10 +111,10 @@ public class SimulatorView extends JFrame
 
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
-                Object dinosaur = field.getDinosaurAt(new Location(row, col));
+                Dinosaur dinosaur = field.getDinosaurAt(new Location(row, col));
                 if(dinosaur != null) {
                     stats.incrementCount(dinosaur.getClass());
-                    fieldView.drawMark(col, row, getColor(dinosaur.getClass()));
+                    fieldView.drawMark(col, row, getColorForDinosaur(dinosaur));
                 }
                 else {
                     fieldView.drawMark(col, row, EMPTY_COLOR);
@@ -127,6 +127,39 @@ public class SimulatorView extends JFrame
         fieldView.repaint();
     }
 
+    /**
+     * Get the display color for a dinosaur, including sex-based brightness adjustment.
+     * Females are drawn brighter, males darker, using the same base species color.
+     */
+    private Color getColorForDinosaur(Dinosaur dinosaur)
+    {
+        Color base = getColor(dinosaur.getClass());
+        if(base == UNKNOWN_COLOR || base == EMPTY_COLOR) {
+            return base;
+        }
+    
+        // Adjust brightness by sex:
+        // Female = brighter, Male = darker.
+        float factor = dinosaur.isFemale() ? 1.30f : 0.80f;
+        return adjustBrightness(base, factor);
+    }
+
+    /**
+     * Adjust brightness while keeping the same hue (HSV/HSB space).
+     * factor > 1.0 brightens, factor < 1.0 darkens.
+     */
+    private Color adjustBrightness(Color color, float factor)
+    {
+        float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
+        float newB = clamp01(hsb[2] * factor);
+        return Color.getHSBColor(hsb[0], hsb[1], newB);
+    }
+    
+    private float clamp01(float v)
+    {
+        return Math.max(0f, Math.min(1f, v));
+    }
+    
     /**
      * Determine whether the simulation should continue to run.
      * @return true If there is more than one species alive.

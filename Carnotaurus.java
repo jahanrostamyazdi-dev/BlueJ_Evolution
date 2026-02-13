@@ -2,10 +2,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A simple model of a carnotaurus.
- * Carnotauruses age, move, eat iguanadons, and die.
- */
 public class Carnotaurus extends Carnivore
 {
     private static final int BREEDING_AGE = 12;
@@ -13,8 +9,9 @@ public class Carnotaurus extends Carnivore
     private static final double BREEDING_PROBABILITY = 0.07;
     private static final int MAX_LITTER_SIZE = 2;
 
-    // Max energy for Carnotaurus (and restored on eating).
-    private static final int FOOD_VALUE = 8;
+    private static final int FOOD_VALUE = 16;
+    private static final int BREEDING_ENERGY_THRESHOLD = 5;
+    private static final int ENERGY_COST_PER_BABY = 2;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -26,7 +23,8 @@ public class Carnotaurus extends Carnivore
 
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
-            setEnergy(rand.nextInt(getMaxEnergy()) + 1);
+            int minStart = (int)(getMaxEnergy() * 0.60);
+            setEnergy(minStart + rand.nextInt(getMaxEnergy() - minStart + 1));
         } else {
             age = 0;
             restoreToFullEnergy();
@@ -43,7 +41,7 @@ public class Carnotaurus extends Carnivore
                 nextFieldState.getFreeAdjacentLocations(getLocation());
 
             if(!freeLocations.isEmpty()) {
-                giveBirth(nextFieldState, freeLocations);
+                giveBirth(currentField, nextFieldState, freeLocations);
             }
 
             Location nextLocation = findFood(currentField);
@@ -78,23 +76,22 @@ public class Carnotaurus extends Carnivore
             Location loc = it.next();
             Dinosaur dinosaur = field.getDinosaurAt(loc);
 
-            // Carnotaurus hunts Iguanadon only.
-            if(dinosaur instanceof Iguanadon iguanadon) {
-                if(iguanadon.isAlive()) {
-                    iguanadon.setDead();
-                    restoreToFullEnergy();
-                    foodLocation = loc;
-                }
+            if(dinosaur instanceof Iguanadon iguanadon && iguanadon.isAlive()) {
+                iguanadon.setDead();
+                restoreToFullEnergy();
+                foodLocation = loc;
             }
         }
         return foodLocation;
     }
 
-    private void giveBirth(Field nextFieldState, List<Location> freeLocations)
+    private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)
     {
-        int births = breed();
+        int births = breed(currentField);
         if(births > 0) {
-            for(int b = 0; b < births && !freeLocations.isEmpty(); b++) {
+            consumeEnergy(births * ENERGY_COST_PER_BABY);
+
+            for(int b = 0; b < births && !freeLocations.isEmpty() && isAlive(); b++) {
                 Location loc = freeLocations.remove(0);
                 Carnotaurus young = new Carnotaurus(false, loc);
                 nextFieldState.placeDinosaur(young, loc);
@@ -102,9 +99,14 @@ public class Carnotaurus extends Carnivore
         }
     }
 
-    private int breed()
+    private int breed(Field currentField)
     {
-        if(canBreed() && rand.nextDouble() <= BREEDING_PROBABILITY) {
+        if(!isFemale()) return 0;
+        if(!canBreed()) return 0;
+        if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;
+        if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
+
+        if(rand.nextDouble() <= BREEDING_PROBABILITY) {
             return rand.nextInt(MAX_LITTER_SIZE) + 1;
         }
         return 0;
