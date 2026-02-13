@@ -6,15 +6,15 @@ import java.util.HashMap;
 
 /**
  * A graphical view of the simulation grid.
- * The view displays a colored rectangle for each location representing its contents.
- * It supports:
- *  - Species colors
- *  - Sex-based brightness (♂ darker, ♀ brighter)
- *  - Day/Night "dark mode" background
- *  - A bottom legend that shows species colors + male/female swatches + live counts
- *
- * @author David J. Barnes and Michael Kölling
- * @version 7.1 (modified)
+ * Displays:
+ *  - species colors
+ *  - sex-based brightness (♂ darker, ♀ brighter)
+ *  - day/night "dark mode" background
+ *  - bottom legend in 2 fixed rows:
+ *      Top: 3 carnivores
+ *      Divider
+ *      Bottom: 3 herbivores
+ *    Each legend item shows ♂/♀ swatches + live count.
  */
 public class SimulatorView extends JFrame
 {
@@ -30,22 +30,17 @@ public class SimulatorView extends JFrame
     private final JLabel stepLabel;
     private final FieldView fieldView;
 
-    // Bottom legend panel (species swatches + counts)
+    // Bottom legend panel container
     private final JPanel legendPanel;
 
-    // A map for storing base colors for species
+    // Base colors per species
     private final Map<Class<?>, Color> colors;
-    // A statistics object computing and storing simulation information
+    // Stats (still used to keep compatibility if you want)
     private final FieldStats stats;
 
-    // Per-step counts (so we can show counts next to legend items)
+    // Per-step counts for legend display
     private final Map<Class<?>, Integer> stepCounts = new HashMap<>();
 
-    /**
-     * Create a view of the given width and height.
-     * @param height The simulation's height.
-     * @param width  The simulation's width.
-     */
     public SimulatorView(int height, int width)
     {
         stats = new FieldStats();
@@ -66,7 +61,9 @@ public class SimulatorView extends JFrame
 
         fieldView = new FieldView(height, width);
 
-        legendPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 4));
+        // Legend container: vertical stack (row1, divider, row2)
+        legendPanel = new JPanel();
+        legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
         legendPanel.setOpaque(true);
 
         Container contents = getContentPane();
@@ -78,19 +75,11 @@ public class SimulatorView extends JFrame
         setVisible(true);
     }
 
-    /**
-     * Define a base color to be used for a given class of dinosaur.
-     * @param dinosaurClass The dinosaur's Class object.
-     * @param color The base color to be used for the given class.
-     */
     public void setColor(Class<?> dinosaurClass, Color color)
     {
         colors.put(dinosaurClass, color);
     }
 
-    /**
-     * @return The base color to be used for a given class of dinosaur.
-     */
     private Color getColor(Class<?> dinosaurClass)
     {
         Color col = colors.get(dinosaurClass);
@@ -108,12 +97,6 @@ public class SimulatorView extends JFrame
         showStatus(step, field, TimeOfDay.DAY);
     }
 
-    /**
-     * Show the current status of the field, including time-of-day rendering.
-     * @param step Which iteration step it is.
-     * @param field The field whose status is to be displayed.
-     * @param timeOfDay Current time-of-day (DAY/NIGHT)
-     */
     public void showStatus(int step, Field field, TimeOfDay timeOfDay)
     {
         if(!isVisible()) {
@@ -155,45 +138,56 @@ public class SimulatorView extends JFrame
         fieldView.repaint();
     }
 
-    /**
-     * Get the display color for a dinosaur:
-     * - base hue is species color
-     * - males darker, females brighter
-     */
     private Color getColorForDinosaur(Dinosaur dinosaur)
     {
         Color base = getColor(dinosaur.getClass());
-
-        // Sex shading factors
         float factor = dinosaur.isFemale() ? 1.30f : 0.80f;
         return adjustBrightness(base, factor);
     }
 
     /**
-     * Rebuild the bottom legend each step to show current counts.
-     * Each species shows: ♂ swatch + ♀ swatch + "Name: count" in base species color.
+     * Legend in 2 fixed rows (3 carnivores on top, 3 herbivores below) with a divider.
      */
     private void updateLegendWithCounts(boolean night)
     {
         legendPanel.removeAll();
         legendPanel.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
 
-        addLegendItemWithCount(legendPanel, "Iguanadon", Iguanadon.class, night);
-        addLegendItemWithCount(legendPanel, "Allosaurus", Allosaurus.class, night);
-        addLegendItemWithCount(legendPanel, "Carnotaurus", Carnotaurus.class, night);
-        addLegendItemWithCount(legendPanel, "Dilophosaurus", Dilophosaurus.class, night);
-        addLegendItemWithCount(legendPanel, "Diabloceratops", Diabloceratops.class, night);
-        addLegendItemWithCount(legendPanel, "Ankylosaurus", Ankylosaurus.class, night);
+        JPanel carnRow = new JPanel(new GridLayout(1, 3, 12, 0));
+        JPanel herbRow = new JPanel(new GridLayout(1, 3, 12, 0));
+
+        carnRow.setOpaque(true);
+        herbRow.setOpaque(true);
+        carnRow.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
+        herbRow.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
+
+        // Top row: Carnivores
+        carnRow.add(createLegendItemWithCount("Allosaurus", Allosaurus.class, night));
+        carnRow.add(createLegendItemWithCount("Carnotaurus", Carnotaurus.class, night));
+        carnRow.add(createLegendItemWithCount("Dilophosaurus", Dilophosaurus.class, night));
+
+        // Divider
+        JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
+        sep.setForeground(night ? NIGHT_GRID_BORDER : GRID_BORDER_DAY);
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+
+        // Bottom row: Herbivores
+        herbRow.add(createLegendItemWithCount("Iguanadon", Iguanadon.class, night));
+        herbRow.add(createLegendItemWithCount("Diabloceratops", Diabloceratops.class, night));
+        herbRow.add(createLegendItemWithCount("Ankylosaurus", Ankylosaurus.class, night));
+
+        legendPanel.add(wrapWithPadding(carnRow, 4, 6, 4, 6, night));
+        legendPanel.add(sep);
+        legendPanel.add(wrapWithPadding(herbRow, 4, 6, 6, 6, night));
 
         legendPanel.revalidate();
         legendPanel.repaint();
     }
 
-    private void addLegendItemWithCount(JPanel panel, String name, Class<?> speciesClass, boolean night)
+    private JPanel createLegendItemWithCount(String name, Class<?> speciesClass, boolean night)
     {
         Color base = getColor(speciesClass);
 
-        // Match the same factors used in getColorForDinosaur(...)
         Color maleColor = adjustBrightness(base, 0.80f);
         Color femaleColor = adjustBrightness(base, 1.30f);
 
@@ -226,13 +220,19 @@ public class SimulatorView extends JFrame
         item.add(femaleText);
         item.add(speciesText);
 
-        panel.add(item);
+        return item;
     }
 
-    /**
-     * Adjust brightness while keeping the same hue (HSB).
-     * factor > 1.0 brightens, factor < 1.0 darkens.
-     */
+    private JPanel wrapWithPadding(JPanel row, int top, int left, int bottom, int right, boolean night)
+    {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(true);
+        wrapper.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(top, left, bottom, right));
+        wrapper.add(row, BorderLayout.CENTER);
+        return wrapper;
+    }
+
     private Color adjustBrightness(Color color, float factor)
     {
         float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
@@ -245,10 +245,6 @@ public class SimulatorView extends JFrame
         return Math.max(0f, Math.min(1f, v));
     }
 
-    /**
-     * Provide a graphical view of a rectangular field.
-     * Custom Swing component that renders the grid.
-     */
     private class FieldView extends JPanel
     {
         private final int GRID_VIEW_SCALING_FACTOR = 6;
@@ -297,7 +293,6 @@ public class SimulatorView extends JFrame
         public void drawMark(int x, int y, Color color)
         {
             g.setColor(color);
-            // xScale-1/yScale-1 leaves a 1px border for grid lines.
             g.fillRect(x * xScale, y * yScale, xScale - 1, yScale - 1);
         }
 
