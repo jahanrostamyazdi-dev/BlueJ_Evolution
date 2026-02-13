@@ -70,33 +70,60 @@ public class Allosaurus extends Carnivore
 
     private Location findFood(Field field)
     {
-        List<Location> adjacent = field.getAdjacentLocations(getLocation());
-        Iterator<Location> it = adjacent.iterator();
-        Location foodLocation = null;
-
-        while(foodLocation == null && it.hasNext()) {
-            Location loc = it.next();
+        // At night, Allosaurus can "see" further (radius 2).
+        List<Location> search = TimeManager.isNight()
+                ? getLocationsWithinRadius(field, getLocation(), 2)
+                : field.getAdjacentLocations(getLocation());
+    
+        for(Location loc : search) {
             Dinosaur dinosaur = field.getDinosaurAt(loc);
-
+    
+            // Night hunting bonus (prey less aware)
+            double huntMultiplier = TimeManager.isNight() ? 1.15 : 1.0;
+    
             if(dinosaur instanceof Iguanadon iguanadon && iguanadon.isAlive()) {
-                iguanadon.setDead();
-                restoreToFullEnergy();
-                foodLocation = loc;
+                if(rand.nextDouble() <= 0.90 * huntMultiplier) {
+                    iguanadon.setDead();
+                    restoreToFullEnergy();
+                    return loc;
+                }
             }
             else if(dinosaur instanceof Diabloceratops diabloceratops && diabloceratops.isAlive()) {
-                diabloceratops.setDead();
-                restoreToFullEnergy();
-                foodLocation = loc;
+                if(rand.nextDouble() <= 0.75 * huntMultiplier) {
+                    diabloceratops.setDead();
+                    restoreToFullEnergy();
+                    return loc;
+                }
             }
             else if(dinosaur instanceof Ankylosaurus ankylosaurus && ankylosaurus.isAlive()) {
-                if(rand.nextDouble() <= ANKYLO_KILL_CHANCE) {
+                if(rand.nextDouble() <= ANKYLO_KILL_CHANCE * huntMultiplier) {
                     ankylosaurus.setDead();
                     restoreToFullEnergy();
-                    foodLocation = loc;
+                    return loc;
                 }
             }
         }
-        return foodLocation;
+        return null;
+    }
+    
+    /**
+     * Returns all locations within a square radius (Chebyshev distance) around a centre.
+     * Radius 1 = adjacent; radius 2 = two tiles out.
+     */
+    private List<Location> getLocationsWithinRadius(Field field, Location centre, int radius)
+    {
+        java.util.Set<Location> set = new java.util.HashSet<>();
+        for(int r = centre.row() - radius; r <= centre.row() + radius; r++) {
+            for(int c = centre.col() - radius; c <= centre.col() + radius; c++) {
+                if(r >= 0 && r < field.getDepth() && c >= 0 && c < field.getWidth()) {
+                    Location loc = new Location(r, c);
+                    if(!loc.equals(centre)) set.add(loc);
+                }
+            }
+        }
+        java.util.List<Location> list = new java.util.ArrayList<>(set);
+        java.util.Collections.shuffle(list, Randomizer.getRandom());
+        return list;
     }
 
     private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)

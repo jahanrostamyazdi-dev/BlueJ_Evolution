@@ -89,20 +89,21 @@ public class Simulator
     public void simulateOneStep()
     {
         step++;
-        // Use a separate Field to store the starting state of
-        // the next step.
+    
+        // Update day/night based on the current step.
+        TimeManager.updateForStep(step);
+    
         Field nextFieldState = new Field(field.getDepth(), field.getWidth());
-
+    
         List<Dinosaur> dinosaurs = field.getDinosaurs();
         for (Dinosaur anDinosaur : dinosaurs) {
             anDinosaur.act(field, nextFieldState);
         }
-        
-        // Replace the old state with the new one.
+    
         field = nextFieldState;
-
+    
         reportStats();
-        view.showStatus(step, field);
+        view.showStatus(step, field, TimeManager.getTimeOfDay());
     }
         
     /**
@@ -111,8 +112,9 @@ public class Simulator
     public void reset()
     {
         step = 0;
+        TimeManager.reset();
         populate();
-        view.showStatus(step, field);
+        view.showStatus(step, field, TimeManager.getTimeOfDay());
     }
     
     /**

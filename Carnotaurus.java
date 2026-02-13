@@ -68,23 +68,43 @@ public class Carnotaurus extends Carnivore
 
     private Location findFood(Field field)
     {
-        List<Location> adjacent = field.getAdjacentLocations(getLocation());
-        Iterator<Location> it = adjacent.iterator();
-        Location foodLocation = null;
-
-        while(foodLocation == null && it.hasNext()) {
-            Location loc = it.next();
+        // Day speed: can reach prey within radius 2 in DAY.
+        List<Location> search = TimeManager.isDay()
+                ? getLocationsWithinRadius(field, getLocation(), 2)
+                : field.getAdjacentLocations(getLocation());
+    
+        for(Location loc : search) {
             Dinosaur dinosaur = field.getDinosaurAt(loc);
-
+    
+            double huntMultiplier = TimeManager.isNight() ? 1.10 : 1.0; // small night vulnerability exists, but carno is weaker at night
+            if(TimeManager.isNight()) huntMultiplier *= 0.90;
+    
             if(dinosaur instanceof Iguanadon iguanadon && iguanadon.isAlive()) {
-                iguanadon.setDead();
-                restoreToFullEnergy();
-                foodLocation = loc;
+                if(rand.nextDouble() <= 0.88 * huntMultiplier) {
+                    iguanadon.setDead();
+                    restoreToFullEnergy();
+                    return loc;
+                }
             }
         }
-        return foodLocation;
+        return null;
     }
-
+    
+    private List<Location> getLocationsWithinRadius(Field field, Location centre, int radius)
+    {
+        java.util.Set<Location> set = new java.util.HashSet<>();
+        for(int r = centre.row() - radius; r <= centre.row() + radius; r++) {
+            for(int c = centre.col() - radius; c <= centre.col() + radius; c++) {
+                if(r >= 0 && r < field.getDepth() && c >= 0 && c < field.getWidth()) {
+                    Location loc = new Location(r, c);
+                    if(!loc.equals(centre)) set.add(loc);
+                }
+            }
+        }
+        java.util.List<Location> list = new java.util.ArrayList<>(set);
+        java.util.Collections.shuffle(list, Randomizer.getRandom());
+        return list;
+    }
     private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)
     {
         int births = breed(currentField);

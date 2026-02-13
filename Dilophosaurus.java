@@ -34,25 +34,51 @@ public class Dilophosaurus extends Carnivore
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();
-        consumeEnergy(1);
-
-        if(isAlive()) {
+    
+        // If it died of old age, stop immediately (prevents null location assertions).
+        if(!isAlive()) {
+            return;
+        }
+    
+        // DAY: sleep (no hunting, no energy drain, try to stay put)
+        if(TimeManager.isDay()) {
             List<Location> freeLocations =
                 nextFieldState.getFreeAdjacentLocations(getLocation());
-
+    
             if(!freeLocations.isEmpty()) {
                 giveBirth(currentField, nextFieldState, freeLocations);
             }
-
+    
+            Location here = getLocation();
+            if(here != null && nextFieldState.getDinosaurAt(here) == null) {
+                nextFieldState.placeDinosaur(this, here);
+                return;
+            }
+            // If can't stay put, fall through to normal movement below.
+        }
+    
+        // NIGHT: active hunting + energy drain
+        consumeEnergy(1);
+    
+        if(isAlive()) {
+            List<Location> freeLocations =
+                nextFieldState.getFreeAdjacentLocations(getLocation());
+    
+            if(!freeLocations.isEmpty()) {
+                giveBirth(currentField, nextFieldState, freeLocations);
+            }
+    
             Location nextLocation = findFood(currentField);
+    
             if(nextLocation == null && !freeLocations.isEmpty()) {
                 nextLocation = freeLocations.remove(0);
             }
-
+    
             if(nextLocation != null) {
                 setLocation(nextLocation);
                 nextFieldState.placeDinosaur(this, nextLocation);
-            } else {
+            }
+            else {
                 setDead();
             }
         }
@@ -68,21 +94,26 @@ public class Dilophosaurus extends Carnivore
 
     private Location findFood(Field field)
     {
-        List<Location> adjacent = field.getAdjacentLocations(getLocation());
-        Iterator<Location> it = adjacent.iterator();
-        Location foodLocation = null;
-
-        while(foodLocation == null && it.hasNext()) {
-            Location loc = it.next();
+        // Daytime: does not hunt.
+        if(TimeManager.isDay()) return null;
+    
+        // Nighttime: hunts adjacent (stronger at night)
+        List<Location> search = field.getAdjacentLocations(getLocation());
+    
+        for(Location loc : search) {
             Dinosaur dinosaur = field.getDinosaurAt(loc);
-
+    
+            double huntMultiplier = 1.25; // strong night hunter + prey less aware
+    
             if(dinosaur instanceof Iguanadon iguanadon && iguanadon.isAlive()) {
-                iguanadon.setDead();
-                restoreToFullEnergy();
-                foodLocation = loc;
+                if(rand.nextDouble() <= 0.90 * huntMultiplier) {
+                    iguanadon.setDead();
+                    restoreToFullEnergy();
+                    return loc;
+                }
             }
         }
-        return foodLocation;
+        return null;
     }
 
     private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)

@@ -2,39 +2,44 @@ import java.awt.*;
 import javax.swing.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  * A graphical view of the simulation grid.
- * The view displays a colored rectangle for each location 
- * representing its contents. It uses a default background color.
- * Colors for each type of species can be defined using the
- * setColor method.
- * 
+ * The view displays a colored rectangle for each location representing its contents.
+ * It supports:
+ *  - Species colors
+ *  - Sex-based brightness (♂ darker, ♀ brighter)
+ *  - Day/Night "dark mode" background
+ *  - A bottom legend that shows species colors + male/female swatches + live counts
+ *
  * @author David J. Barnes and Michael Kölling
- * @version 7.0
+ * @version 7.1 (modified)
  */
 public class SimulatorView extends JFrame
 {
-    // Colors used for empty locations.
+    // Day mode colors
     private static final Color EMPTY_COLOR = Color.white;
+    private static final Color GRID_BORDER_DAY = Color.lightGray;
 
-    // Color used for objects that have no defined color.
-    private static final Color UNKNOWN_COLOR = Color.gray;
+    // Night mode colors
+    private static final Color NIGHT_EMPTY_COLOR = new Color(20, 20, 20);
+    private static final Color NIGHT_GRID_BORDER = new Color(40, 40, 40);
+    private static final Color NIGHT_TEXT_COLOR = new Color(230, 230, 230);
 
-    private final String STEP_PREFIX = "Step: ";
-    private final String POPULATION_PREFIX = "Population: ";
     private final JLabel stepLabel;
-    private final JLabel population;
     private final FieldView fieldView;
-    
-    //For the legend to show the colours and species
-    private final JLabel legendLabel;
+
+    // Bottom legend panel (species swatches + counts)
     private final JPanel legendPanel;
-    
-    // A map for storing colors for participants in the simulation
+
+    // A map for storing base colors for species
     private final Map<Class<?>, Color> colors;
     // A statistics object computing and storing simulation information
     private final FieldStats stats;
+
+    // Per-step counts (so we can show counts next to legend items)
+    private final Map<Class<?>, Integer> stepCounts = new HashMap<>();
 
     /**
      * Create a view of the given width and height.
@@ -45,45 +50,38 @@ public class SimulatorView extends JFrame
     {
         stats = new FieldStats();
         colors = new LinkedHashMap<>();
-        
-        //Carni colours
+
+        // Base species colors (sex shading is applied at draw-time)
+        setColor(Iguanadon.class, Color.orange);
         setColor(Allosaurus.class, Color.blue);
         setColor(Carnotaurus.class, Color.red);
         setColor(Dilophosaurus.class, Color.magenta);
+        setColor(Diabloceratops.class, Color.green);
+        setColor(Ankylosaurus.class, Color.black);
 
-        //Herbi colours
-        setColor(Diabloceratops.class, Color.yellow);
-        setColor(Ankylosaurus.class, Color.pink);
-        setColor(Iguanadon.class, Color.orange);
-        
-        setTitle("Allosaurus and Iguanadon Simulation");
-        stepLabel = new JLabel(STEP_PREFIX, JLabel.CENTER);
-        population = new JLabel(POPULATION_PREFIX, JLabel.CENTER);
-        
+        setTitle("Dinosaur Ecosystem Simulation");
+        stepLabel = new JLabel("Step: 0", JLabel.CENTER);
+
         setLocation(100, 50);
-        
+
         fieldView = new FieldView(height, width);
+
+        legendPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 4));
+        legendPanel.setOpaque(true);
 
         Container contents = getContentPane();
         contents.add(stepLabel, BorderLayout.NORTH);
         contents.add(fieldView, BorderLayout.CENTER);
-        // Bottom area: population + legend
-        legendLabel = new JLabel("Legend: ♀ brighter  |  ♂ darker", JLabel.CENTER);
-        legendPanel = new JPanel();
-        legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
-        legendPanel.add(population);
-        legendPanel.add(legendLabel);
-        legendPanel.add(createSpeciesLegendPanel());
         contents.add(legendPanel, BorderLayout.SOUTH);
-        //pack it all to the screen
+
         pack();
         setVisible(true);
     }
-    
+
     /**
-     * Define a color to be used for a given class of dinosaur.
+     * Define a base color to be used for a given class of dinosaur.
      * @param dinosaurClass The dinosaur's Class object.
-     * @param color The color to be used for the given class.
+     * @param color The base color to be used for the given class.
      */
     public void setColor(Class<?> dinosaurClass, Color color)
     {
@@ -91,126 +89,148 @@ public class SimulatorView extends JFrame
     }
 
     /**
-     * @return The color to be used for a given class of dinosaur.
+     * @return The base color to be used for a given class of dinosaur.
      */
     private Color getColor(Class<?> dinosaurClass)
     {
         Color col = colors.get(dinosaurClass);
         if(col == null) {
-            // no color defined for this class
-            return UNKNOWN_COLOR;
+            return Color.gray;
         }
-        else {
-            return col;
-        }
+        return col;
     }
 
     /**
-     * Builds a legend panel showing each species with male/female shade swatches.
-     * Male = darker, Female = brighter (same hue).
-     */
-    private JPanel createSpeciesLegendPanel()
-    {
-        JPanel panel = new JPanel();
-        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 12, 2));
-    
-        addLegendItem(panel, "Iguanadon", getColor(Iguanadon.class));
-        addLegendItem(panel, "Allosaurus", getColor(Allosaurus.class));
-        addLegendItem(panel, "Carnotaurus", getColor(Carnotaurus.class));
-        addLegendItem(panel, "Dilophosaurus", getColor(Dilophosaurus.class));
-        addLegendItem(panel, "Diabloceratops", getColor(Diabloceratops.class));
-        addLegendItem(panel, "Ankylosaurus", getColor(Ankylosaurus.class));
-    
-        return panel;
-    }
-    
-    /**
-     * Adds one legend item: ♂ swatch (darker) + ♀ swatch (brighter) + species name.
-     */
-    private void addLegendItem(JPanel panel, String name, Color baseColor)
-    {
-        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-    
-        // Match the same factors used in getColorForDinosaur(...)
-        Color maleColor = adjustBrightness(baseColor, 0.80f);
-        Color femaleColor = adjustBrightness(baseColor, 1.30f);
-    
-        JLabel maleSwatch = new JLabel("■");
-        maleSwatch.setForeground(maleColor);
-        maleSwatch.setFont(maleSwatch.getFont().deriveFont(Font.BOLD, 14f));
-    
-        JLabel maleText = new JLabel("♂");
-    
-        JLabel femaleSwatch = new JLabel("■");
-        femaleSwatch.setForeground(femaleColor);
-        femaleSwatch.setFont(femaleSwatch.getFont().deriveFont(Font.BOLD, 14f));
-    
-        JLabel femaleText = new JLabel("♀");
-    
-        JLabel speciesText = new JLabel(" " + name);
-    
-        item.add(maleSwatch);
-        item.add(maleText);
-        item.add(femaleSwatch);
-        item.add(femaleText);
-        item.add(speciesText);
-    
-        panel.add(item);
-    }
-    
-    /**
-     * Show the current status of the field.
-     * @param step Which iteration step it is.
-     * @param field The field whose status is to be displayed.
+     * Backwards-compatible showStatus (defaults to DAY if not provided).
      */
     public void showStatus(int step, Field field)
+    {
+        showStatus(step, field, TimeOfDay.DAY);
+    }
+
+    /**
+     * Show the current status of the field, including time-of-day rendering.
+     * @param step Which iteration step it is.
+     * @param field The field whose status is to be displayed.
+     * @param timeOfDay Current time-of-day (DAY/NIGHT)
+     */
+    public void showStatus(int step, Field field, TimeOfDay timeOfDay)
     {
         if(!isVisible()) {
             setVisible(true);
         }
-            
-        stepLabel.setText(STEP_PREFIX + step);
+
+        boolean night = (timeOfDay == TimeOfDay.NIGHT);
+
+        setTitle("Dinosaur Ecosystem Simulation (" + timeOfDay + ")");
+        stepLabel.setForeground(night ? NIGHT_TEXT_COLOR : Color.black);
+        stepLabel.setText("Step: " + step + " | " + timeOfDay);
+
         stats.reset();
-        
-        fieldView.preparePaint();
+        stepCounts.clear();
+
+        fieldView.preparePaint(night);
+
+        Color empty = night ? NIGHT_EMPTY_COLOR : EMPTY_COLOR;
 
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
                 Dinosaur dinosaur = field.getDinosaurAt(new Location(row, col));
                 if(dinosaur != null) {
                     stats.incrementCount(dinosaur.getClass());
+                    stepCounts.put(dinosaur.getClass(),
+                                   stepCounts.getOrDefault(dinosaur.getClass(), 0) + 1);
+
                     fieldView.drawMark(col, row, getColorForDinosaur(dinosaur));
                 }
                 else {
-                    fieldView.drawMark(col, row, EMPTY_COLOR);
+                    fieldView.drawMark(col, row, empty);
                 }
             }
         }
-        stats.countFinished();
 
-        population.setText(POPULATION_PREFIX + stats.getPopulationDetails(field));
+        stats.countFinished();
+        updateLegendWithCounts(night);
+
         fieldView.repaint();
     }
 
     /**
-     * Get the display color for a dinosaur, including sex-based brightness adjustment.
-     * Females are drawn brighter, males darker, using the same base species color.
+     * Get the display color for a dinosaur:
+     * - base hue is species color
+     * - males darker, females brighter
      */
     private Color getColorForDinosaur(Dinosaur dinosaur)
     {
         Color base = getColor(dinosaur.getClass());
-        if(base == UNKNOWN_COLOR || base == EMPTY_COLOR) {
-            return base;
-        }
-    
-        // Adjust brightness by sex:
-        // Female = brighter, Male = darker.
+
+        // Sex shading factors
         float factor = dinosaur.isFemale() ? 1.30f : 0.80f;
         return adjustBrightness(base, factor);
     }
 
     /**
-     * Adjust brightness while keeping the same hue (HSV/HSB space).
+     * Rebuild the bottom legend each step to show current counts.
+     * Each species shows: ♂ swatch + ♀ swatch + "Name: count" in base species color.
+     */
+    private void updateLegendWithCounts(boolean night)
+    {
+        legendPanel.removeAll();
+        legendPanel.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
+
+        addLegendItemWithCount(legendPanel, "Iguanadon", Iguanadon.class, night);
+        addLegendItemWithCount(legendPanel, "Allosaurus", Allosaurus.class, night);
+        addLegendItemWithCount(legendPanel, "Carnotaurus", Carnotaurus.class, night);
+        addLegendItemWithCount(legendPanel, "Dilophosaurus", Dilophosaurus.class, night);
+        addLegendItemWithCount(legendPanel, "Diabloceratops", Diabloceratops.class, night);
+        addLegendItemWithCount(legendPanel, "Ankylosaurus", Ankylosaurus.class, night);
+
+        legendPanel.revalidate();
+        legendPanel.repaint();
+    }
+
+    private void addLegendItemWithCount(JPanel panel, String name, Class<?> speciesClass, boolean night)
+    {
+        Color base = getColor(speciesClass);
+
+        // Match the same factors used in getColorForDinosaur(...)
+        Color maleColor = adjustBrightness(base, 0.80f);
+        Color femaleColor = adjustBrightness(base, 1.30f);
+
+        int count = stepCounts.getOrDefault(speciesClass, 0);
+
+        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        item.setOpaque(true);
+        item.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
+
+        JLabel maleSwatch = new JLabel("■");
+        maleSwatch.setForeground(maleColor);
+        maleSwatch.setFont(maleSwatch.getFont().deriveFont(Font.BOLD, 14f));
+
+        JLabel maleText = new JLabel("♂");
+        maleText.setForeground(night ? NIGHT_TEXT_COLOR : Color.black);
+
+        JLabel femaleSwatch = new JLabel("■");
+        femaleSwatch.setForeground(femaleColor);
+        femaleSwatch.setFont(femaleSwatch.getFont().deriveFont(Font.BOLD, 14f));
+
+        JLabel femaleText = new JLabel("♀");
+        femaleText.setForeground(night ? NIGHT_TEXT_COLOR : Color.black);
+
+        JLabel speciesText = new JLabel(" " + name + ": " + count);
+        speciesText.setForeground(night ? adjustBrightness(base, 1.20f) : base);
+
+        item.add(maleSwatch);
+        item.add(maleText);
+        item.add(femaleSwatch);
+        item.add(femaleText);
+        item.add(speciesText);
+
+        panel.add(item);
+    }
+
+    /**
+     * Adjust brightness while keeping the same hue (HSB).
      * factor > 1.0 brightens, factor < 1.0 darkens.
      */
     private Color adjustBrightness(Color color, float factor)
@@ -219,28 +239,15 @@ public class SimulatorView extends JFrame
         float newB = clamp01(hsb[2] * factor);
         return Color.getHSBColor(hsb[0], hsb[1], newB);
     }
-    
+
     private float clamp01(float v)
     {
         return Math.max(0f, Math.min(1f, v));
     }
-    
+
     /**
-     * Determine whether the simulation should continue to run.
-     * @return true If there is more than one species alive.
-     */
-    public boolean isViable(Field field)
-    {
-        return stats.isViable(field);
-    }
-    
-    /**
-     * Provide a graphical view of a rectangular field. This is 
-     * a nested class (a class defined inside a class) which
-     * defines a custom component for the user interface. This
-     * component displays the field.
-     * This is rather advanced GUI stuff - you can ignore this 
-     * for your project if you like.
+     * Provide a graphical view of a rectangular field.
+     * Custom Swing component that renders the grid.
      */
     private class FieldView extends JPanel
     {
@@ -248,13 +255,10 @@ public class SimulatorView extends JFrame
 
         private final int gridWidth, gridHeight;
         private int xScale, yScale;
-        Dimension size;
+        private Dimension size;
         private Graphics g;
         private Image fieldImage;
 
-        /**
-         * Create a new FieldView component.
-         */
         public FieldView(int height, int width)
         {
             gridHeight = height;
@@ -262,22 +266,15 @@ public class SimulatorView extends JFrame
             size = new Dimension(0, 0);
         }
 
-        /**
-         * Tell the GUI manager how big we would like to be.
-         */
         public Dimension getPreferredSize()
         {
             return new Dimension(gridWidth * GRID_VIEW_SCALING_FACTOR,
                                  gridHeight * GRID_VIEW_SCALING_FACTOR);
         }
 
-        /**
-         * Prepare for a new round of painting. Since the component
-         * may be resized, compute the scaling factor again.
-         */
-        public void preparePaint()
+        public void preparePaint(boolean night)
         {
-            if(! size.equals(getSize())) {  // if the size has changed...
+            if(!size.equals(getSize())) {
                 size = getSize();
                 fieldImage = fieldView.createImage(size.width, size.height);
                 g = fieldImage.getGraphics();
@@ -291,21 +288,19 @@ public class SimulatorView extends JFrame
                     yScale = GRID_VIEW_SCALING_FACTOR;
                 }
             }
+
+            // Fill background with "grid line" colour so the 1px gaps show as grid.
+            g.setColor(night ? NIGHT_GRID_BORDER : GRID_BORDER_DAY);
+            g.fillRect(0, 0, size.width, size.height);
         }
-        
-        /**
-         * Paint on grid location on this field in a given color.
-         */
+
         public void drawMark(int x, int y, Color color)
         {
             g.setColor(color);
-            g.fillRect(x * xScale, y * yScale, xScale-1, yScale-1);
+            // xScale-1/yScale-1 leaves a 1px border for grid lines.
+            g.fillRect(x * xScale, y * yScale, xScale - 1, yScale - 1);
         }
 
-        /**
-         * The field view component needs to be redisplayed. Copy the
-         * internal image to screen.
-         */
         public void paintComponent(Graphics g)
         {
             if(fieldImage != null) {
@@ -314,7 +309,6 @@ public class SimulatorView extends JFrame
                     g.drawImage(fieldImage, 0, 0, null);
                 }
                 else {
-                    // Rescale the previous image.
                     g.drawImage(fieldImage, 0, 0, currentSize.width, currentSize.height, null);
                 }
             }
