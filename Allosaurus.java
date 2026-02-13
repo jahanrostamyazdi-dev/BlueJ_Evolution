@@ -25,7 +25,8 @@ public class Allosaurus extends Carnivore
     private static final int IGUANADON_FOOD_VALUE = 9;
     // A shared random number generator to control breeding.
     private static final Random rand = Randomizer.getRandom();
-    
+    // Chance of killing ankys successfully.
+    private static final double ANKYLO_KILL_CHANCE = 0.20; // 20% success (tune later)
     // Individual characteristics (instance fields).
 
     // The allosaurus's age.
@@ -132,14 +133,34 @@ public class Allosaurus extends Carnivore
         List<Location> adjacent = field.getAdjacentLocations(getLocation());
         Iterator<Location> it = adjacent.iterator();
         Location foodLocation = null;
+    
         while(foodLocation == null && it.hasNext()) {
             Location loc = it.next();
             Dinosaur dinosaur = field.getDinosaurAt(loc);
+    
             if(dinosaur instanceof Iguanadon iguanadon) {
                 if(iguanadon.isAlive()) {
                     iguanadon.setDead();
                     foodLevel = IGUANADON_FOOD_VALUE;
                     foodLocation = loc;
+                }
+            }
+            else if(dinosaur instanceof Diabloceratops diabloceratops) {
+                if(diabloceratops.isAlive()) {
+                    diabloceratops.setDead();
+                    foodLevel = IGUANADON_FOOD_VALUE;
+                    foodLocation = loc;
+                }
+            }
+            else if(dinosaur instanceof Ankylosaurus ankylosaurus) {
+                if(ankylosaurus.isAlive()) {
+                    // Hard-to-kill prey: only sometimes succeeds.
+                    if(rand.nextDouble() <= ANKYLO_KILL_CHANCE) {
+                        ankylosaurus.setDead();
+                        foodLevel = IGUANADON_FOOD_VALUE; // can tune later
+                        foodLocation = loc;
+                    }
+                    // If it fails, it just doesn't eat this step and continues checking others.
                 }
             }
         }

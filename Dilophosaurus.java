@@ -77,14 +77,15 @@ public class Dilophosaurus extends Carnivore
         List<Location> adjacent = field.getAdjacentLocations(getLocation());
         Iterator<Location> it = adjacent.iterator();
         Location foodLocation = null;
-
+    
         while(foodLocation == null && it.hasNext()) {
             Location loc = it.next();
             Dinosaur dinosaur = field.getDinosaurAt(loc);
-
-            if(dinosaur instanceof Herbivore herbivore) {
-                if(herbivore.isAlive()) {
-                    herbivore.setDead();
+    
+            // Dilophosaurus hunts Iguanadon only (for now).
+            if(dinosaur instanceof Iguanadon iguanadon) {
+                if(iguanadon.isAlive()) {
+                    iguanadon.setDead();
                     foodLevel = HERBIVORE_FOOD_VALUE;
                     foodLocation = loc;
                 }

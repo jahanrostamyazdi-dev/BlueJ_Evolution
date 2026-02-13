@@ -84,15 +84,15 @@ public class Carnotaurus extends Carnivore
         List<Location> adjacent = field.getAdjacentLocations(getLocation());
         Iterator<Location> it = adjacent.iterator();
         Location foodLocation = null;
-
+    
         while(foodLocation == null && it.hasNext()) {
             Location loc = it.next();
             Dinosaur dinosaur = field.getDinosaurAt(loc);
-
-            // For now: eat any herbivore.
-            if(dinosaur instanceof Herbivore herbivore) {
-                if(herbivore.isAlive()) {
-                    herbivore.setDead();
+    
+            // Carnotaurus hunts Iguanadon only.
+            if(dinosaur instanceof Iguanadon iguanadon) {
+                if(iguanadon.isAlive()) {
+                    iguanadon.setDead();
                     foodLevel = HERBIVORE_FOOD_VALUE;
                     foodLocation = loc;
                 }
