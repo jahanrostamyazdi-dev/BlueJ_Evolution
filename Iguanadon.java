@@ -37,26 +37,26 @@ public class Iguanadon extends Herbivore
     {
         incrementAge();
         if(!isAlive()) return;
-
+    
         consumeEnergy(1);
         if(!isAlive()) return;
-
-        // Eat on the tile you end up on (affects nextFieldState vegetation)
+    
+        // Eat first (stabilises survival & breeding)
         eat(nextFieldState);
-        
+    
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
         if(!free.isEmpty()) {
             giveBirth(currentField, nextFieldState, free);
         }
-
+    
         Location nextLocation = chooseBestVegetationMove(currentField, free);
         if(nextLocation != null) {
             setLocation(nextLocation);
             nextFieldState.placeDinosaur(this, nextLocation);
-        } else {
+        }
+        else {
             // overcrowding
             setDead();
-            return;
         }
     }
 

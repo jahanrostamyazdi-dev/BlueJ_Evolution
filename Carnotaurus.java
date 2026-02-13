@@ -90,17 +90,23 @@ public class Carnotaurus extends Carnivore
 
     private Location findFood(Field field)
     {
+        // Day advantage normally radius 2 in day, adjacent at night.
+        // Fog reduces sensing range by 1 (so day radius 2 becomes 1).
+        int dayRadius = 2 - WeatherManager.predatorRangePenalty();
+        if(dayRadius < 1) dayRadius = 1;
+    
         List<Location> search = TimeManager.isDay()
-                ? getLocationsWithinRadius(field, getLocation(), 2)   // day speed
+                ? getLocationsWithinRadius(field, getLocation(), dayRadius)
                 : field.getAdjacentLocations(getLocation());
-
-        double timeMod = TimeManager.isNight() ? 0.90 : 1.0;
-
+    
+        // Slightly weaker at night + fog success penalty
+        double timeMod = (TimeManager.isNight() ? 0.95 : 1.0) * WeatherManager.predatorHuntModifier();
+    
         for(Location loc : search) {
             Dinosaur prey = field.getDinosaurAt(loc);
             if(prey == null || !prey.isAlive()) continue;
-
-            // Carnotaurus hunts Iguanadon only (current rule)
+    
+            // Carnotaurus hunts Iguanadon only (your current rule)
             if(prey instanceof Iguanadon) {
                 if(tryKill(prey, BASE_KILL_CHANCE, timeMod)) {
                     prey.setDead();

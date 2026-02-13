@@ -113,18 +113,19 @@ public class Dilophosaurus extends Carnivore
 
     private Location findFood(Field field)
     {
-        // Only hunts at night (day returns null)
+        // Only hunts at night (sleeps in day)
         if(TimeManager.isDay()) return null;
-
+    
         List<Location> adjacent = field.getAdjacentLocations(getLocation());
-
-        double timeMod = 1.25; // strong at night
-
+    
+        // Strong at night + fog success penalty
+        double timeMod = 1.15 * WeatherManager.predatorHuntModifier();
+    
         for(Location loc : adjacent) {
             Dinosaur prey = field.getDinosaurAt(loc);
             if(prey == null || !prey.isAlive()) continue;
-
-            // Dilophosaurus hunts Iguanadon only (current rule)
+    
+            // Dilophosaurus hunts Iguanadon only (your current rule)
             if(prey instanceof Iguanadon) {
                 if(tryKill(prey, BASE_KILL_CHANCE, timeMod)) {
                     prey.setDead();

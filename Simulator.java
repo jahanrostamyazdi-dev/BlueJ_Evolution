@@ -59,31 +59,31 @@ public class Simulator
     public void simulateOneStep()
     {
         step++;
-
+    
         TimeManager.updateForStep(step);
-
-        // Create next state and COPY vegetation forward
+        WeatherManager.updateOneStep();
+    
         Field nextFieldState = new Field(field.getDepth(), field.getWidth());
         nextFieldState.copyVegetationFrom(field);
-
-        List<Dinosaur> dinosaurs = field.getDinosaurs();
-        for (Dinosaur anDinosaur : dinosaurs) {
-            anDinosaur.act(field, nextFieldState);
+    
+        for(Dinosaur d : field.getDinosaurs()) {
+            d.act(field, nextFieldState);
         }
-
-        // Regrow vegetation AFTER animals have eaten this step
-        nextFieldState.regrowVegetation(TimeManager.getTimeOfDay());
-
+    
+        // Regrow AFTER animals eat
+        nextFieldState.regrowVegetation(TimeManager.getTimeOfDay(), WeatherManager.getWeather());
+    
         field = nextFieldState;
-
+    
         reportStats();
-        view.showStatus(step, field, TimeManager.getTimeOfDay());
+        view.showStatus(step, field, TimeManager.getTimeOfDay(), WeatherManager.getWeather());
     }
 
     public void reset()
     {
         step = 0;
         TimeManager.reset();
+        WeatherManager.reset();
         populate();
         view.showStatus(step, field, TimeManager.getTimeOfDay());
     }

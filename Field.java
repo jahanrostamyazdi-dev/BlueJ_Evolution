@@ -179,21 +179,46 @@ public class Field
      * Vegetation regrows a bit everywhere each step.
      * Night regrows slightly faster; day slightly slower.
      */
-    public void regrowVegetation(TimeOfDay timeOfDay)
+    public void regrowVegetation(TimeOfDay timeOfDay, WeatherState weather)
     {
-        int grow = (timeOfDay == TimeOfDay.NIGHT) ? 1 : 1; // slower
+        // patchy regrowth so it doesn't fill evenly
+        double p = 0.25;
+        int baseGrow = (timeOfDay == TimeOfDay.NIGHT) ? 1 : 1;
+    
+        double mult = WeatherManager.vegetationRegrowMultiplier();
+        int cap = WeatherManager.vegetationCap();
+    
+        // convert multiplier into either larger grow or higher probability
+        // (keeps integer math simple)
+        double pScaled = p * mult;
+        if(pScaled > 0.85) pScaled = 0.85;
+    
+        int grow = baseGrow;
+        if(mult >= 1.4) grow = baseGrow + 1;     // rain pushes growth a bit faster
+        if(mult <= 0.60) grow = 0;               // heatwave: no active regrowth, only rare recovery below
     
         for(int r = 0; r < depth; r++) {
             for(int c = 0; c < width; c++) {
-                // probabilistic regrowth so it doesn't fill evenly
-                if(rand.nextDouble() < 0.35) {  // 35% of tiles regrow each step
+    
+                // Heatwave can also "stress" plants by pulling high vegetation down toward cap.
+                if(weather == WeatherState.HEATWAVE && vegetation[r][c] > cap) {
+                    vegetation[r][c] = Math.max(cap, vegetation[r][c] - 1);
+                }
+    
+                // Probabilistic regrowth
+                if(rand.nextDouble() < pScaled) {
                     int v = vegetation[r][c] + grow;
-                    if(v > 100) v = 100;
+                    if(v > cap) v = cap;
                     vegetation[r][c] = v;
+                }
+    
+                // During heatwave, allow a tiny recovery chance even if grow==0
+                if(weather == WeatherState.HEATWAVE && vegetation[r][c] < cap && rand.nextDouble() < 0.05) {
+                    vegetation[r][c] = Math.min(cap, vegetation[r][c] + 1);
                 }
             }
         }
-    }   
+    }
 
     /**
      * Copy the vegetation layer from an existing field into this one.

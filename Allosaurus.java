@@ -94,17 +94,23 @@ public class Allosaurus extends Carnivore
 
     private Location findFood(Field field)
     {
+        // Night vision normally radius 2 at night, adjacent by day.
+        // Fog reduces predator sensing range by 1.
+        int nightRadius = 2 - WeatherManager.predatorRangePenalty();
+        if(nightRadius < 1) nightRadius = 1;
+    
         List<Location> search = TimeManager.isNight()
-                ? getLocationsWithinRadius(field, getLocation(), 2)   // night vision
+                ? getLocationsWithinRadius(field, getLocation(), nightRadius)
                 : field.getAdjacentLocations(getLocation());
-
-        double timeMod = TimeManager.isNight() ? 1.15 : 1.0;
-
+    
+        // Time-of-day modifier + fog success penalty
+        double timeMod = (TimeManager.isNight() ? 1.10 : 1.0) * WeatherManager.predatorHuntModifier();
+    
         for(Location loc : search) {
             Dinosaur prey = field.getDinosaurAt(loc);
             if(prey == null || !prey.isAlive()) continue;
-
-            // Allosaurus can hunt all three herbivores
+    
+            // Allosaurus hunts all three herbivores
             if(prey instanceof Iguanadon || prey instanceof Diabloceratops || prey instanceof Ankylosaurus) {
                 if(tryKill(prey, BASE_KILL_CHANCE, timeMod)) {
                     prey.setDead();
@@ -114,7 +120,7 @@ public class Allosaurus extends Carnivore
             }
         }
         return null;
-    }
+    }   
 
     private List<Location> getLocationsWithinRadius(Field field, Location centre, int radius)
     {

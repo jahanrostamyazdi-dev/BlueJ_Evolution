@@ -73,24 +73,29 @@ public class SimulatorView extends JFrame
 
     public void showStatus(int step, Field field, TimeOfDay timeOfDay)
     {
+        showStatus(step, field, timeOfDay, WeatherManager.getWeather());
+    }
+    
+    public void showStatus(int step, Field field, TimeOfDay timeOfDay, WeatherState weather)
+    {
         if(!isVisible()) setVisible(true);
-
+    
         boolean night = (timeOfDay == TimeOfDay.NIGHT);
-
-        setTitle("Dinosaur Ecosystem Simulation (" + timeOfDay + ")");
+    
+        setTitle("Dinosaur Ecosystem Simulation (" + timeOfDay + ", " + weather + ")");
         stepLabel.setForeground(night ? NIGHT_TEXT_COLOR : Color.black);
-        stepLabel.setText("Step: " + step + " | " + timeOfDay);
-
+        stepLabel.setText("Step: " + step + " | " + timeOfDay + " | Weather: " + weather);
+    
         stats.reset();
         stepCounts.clear();
-
+    
         fieldView.preparePaint(night);
-
+    
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
                 Location loc = new Location(row, col);
                 Dinosaur dinosaur = field.getDinosaurAt(loc);
-
+    
                 if(dinosaur != null) {
                     stats.incrementCount(dinosaur.getClass());
                     stepCounts.put(dinosaur.getClass(), stepCounts.getOrDefault(dinosaur.getClass(), 0) + 1);
@@ -102,10 +107,9 @@ public class SimulatorView extends JFrame
                 }
             }
         }
-
+    
         stats.countFinished();
         updateLegendWithCounts(night);
-
         fieldView.repaint();
     }
 

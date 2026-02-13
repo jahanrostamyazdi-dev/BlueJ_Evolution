@@ -34,24 +34,36 @@ public class Diabloceratops extends Herbivore
     {
         incrementAge();
         if(!isAlive()) return;
-
+    
         consumeEnergy(1);
         if(!isAlive()) return;
-
+    
+        // Eat first
         eat(nextFieldState);
-        
+    
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
         if(!free.isEmpty()) {
             giveBirth(currentField, nextFieldState, free);
         }
-
+    
+        // Heavy animal slowdown in rain: sometimes it stays put instead of moving
+        if(WeatherManager.getWeather() == WeatherState.RAIN) {
+            if(Randomizer.getRandom().nextDouble() < 0.50) {
+                Location here = getLocation();
+                if(here != null && nextFieldState.getDinosaurAt(here) == null) {
+                    nextFieldState.placeDinosaur(this, here);
+                    return;
+                }
+            }
+        }
+    
         Location nextLocation = chooseBestVegetationMove(currentField, free);
         if(nextLocation != null) {
             setLocation(nextLocation);
             nextFieldState.placeDinosaur(this, nextLocation);
-        } else {
+        }
+        else {
             setDead();
-            return;
         }
     }
 
