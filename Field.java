@@ -2,41 +2,36 @@ import java.util.*;
 
 /**
  * Represent a rectangular grid of field positions.
- * Each position is able to store a single dinosaur/object.
- * 
- * @author David J. Barnes and Michael Kölling
- * @version 7.0
+ * Each position can store a single dinosaur.
+ * Also stores vegetation (0..100) for each tile.
  */
 public class Field
 {
-    // A random number generator for providing random locations.
     private static final Random rand = Randomizer.getRandom();
-    
-    // The dimensions of the field.
+
     private final int depth, width;
+
     // Dinosaurs mapped by location.
     private final Map<Location, Dinosaur> field = new HashMap<>();
-    // The dinosaurs.
+    // The dinosaurs list (used by Simulator and viability).
     private final List<Dinosaur> dinosaurs = new ArrayList<>();
 
-    /**
-     * Represent a field of the given dimensions.
-     * @param depth The depth of the field.
-     * @param width The width of the field.
-     */
+    // Vegetation layer: 0..100 per tile
+    private final int[][] vegetation;
+
     public Field(int depth, int width)
     {
         this.depth = depth;
         this.width = width;
+
+        vegetation = new int[depth][width];
+        randomizeVegetation();
     }
 
-    /**
-     * Place a dinosaur at the given location.
-     * If there is already a dinosaur at the location it will
-     * be lost.
-     * @param anDinosaur The dinosaur to be placed.
-     * @param location Where to place the dinosaur.
-     */
+    // ---------------------------
+    // Dinosaurs
+    // ---------------------------
+
     public void placeDinosaur(Dinosaur anDinosaur, Location location)
     {
         assert location != null;
@@ -47,22 +42,12 @@ public class Field
         field.put(location, anDinosaur);
         dinosaurs.add(anDinosaur);
     }
-    
-    /**
-     * Return the dinosaur at the given location, if any.
-     * @param location Where in the field.
-     * @return The dinosaur at the given location, or null if there is none.
-     */
+
     public Dinosaur getDinosaurAt(Location location)
     {
         return field.get(location);
     }
 
-    /**
-     * Get a shuffled list of the free adjacent locations.
-     * @param location Get locations adjacent to this.
-     * @return A list of free adjacent locations.
-     */
     public List<Location> getFreeAdjacentLocations(Location location)
     {
         List<Location> free = new LinkedList<>();
@@ -79,16 +64,8 @@ public class Field
         return free;
     }
 
-    /**
-     * Return a shuffled list of locations adjacent to the given one.
-     * The list will not include the location itself.
-     * All locations will lie within the grid.
-     * @param location The location from which to generate adjacencies.
-     * @return A list of locations adjacent to that given.
-     */
     public List<Location> getAdjacentLocations(Location location)
     {
-        // The list of locations to be returned.
         List<Location> locations = new ArrayList<>();
         if(location != null) {
             int row = location.row();
@@ -98,91 +75,144 @@ public class Field
                 if(nextRow >= 0 && nextRow < depth) {
                     for(int coffset = -1; coffset <= 1; coffset++) {
                         int nextCol = col + coffset;
-                        // Exclude invalid locations and the original location.
                         if(nextCol >= 0 && nextCol < width && (roffset != 0 || coffset != 0)) {
                             locations.add(new Location(nextRow, nextCol));
                         }
                     }
                 }
             }
-            
-            // Shuffle the list. Several other methods rely on the list
-            // being in a random order.
             Collections.shuffle(locations, rand);
         }
         return locations;
     }
 
-    /**
-     * Print out the number of allosaurs and iguanadons in the field.
-     */
     public void fieldStats()
     {
-        int carnivores = 0;
-        int herbivores = 0;
-    
-        for(Dinosaur d : field.values()) {
-            if(d != null && d.isAlive()) {
-                if(d instanceof Carnivore) carnivores++;
-                if(d instanceof Herbivore) herbivores++;
-            }
+        int numAllosaurs = 0, numIguanadons = 0;
+        int numCarnotaurus = 0, numDilophosaurus = 0;
+        int numDiabloceratops = 0, numAnkylosaurus = 0;
+
+        for(Dinosaur anDinosaur : field.values()) {
+            if(anDinosaur == null || !anDinosaur.isAlive()) continue;
+
+            if(anDinosaur instanceof Allosaurus) numAllosaurs++;
+            else if(anDinosaur instanceof Iguanadon) numIguanadons++;
+            else if(anDinosaur instanceof Carnotaurus) numCarnotaurus++;
+            else if(anDinosaur instanceof Dilophosaurus) numDilophosaurus++;
+            else if(anDinosaur instanceof Diabloceratops) numDiabloceratops++;
+            else if(anDinosaur instanceof Ankylosaurus) numAnkylosaurus++;
         }
-    
-        System.out.println("Herbivores: " + herbivores + " Carnivores: " + carnivores);
+
+        System.out.println(
+            "Iguanadons: " + numIguanadons +
+            " Diabloceratops: " + numDiabloceratops +
+            " Ankylosaurus: " + numAnkylosaurus +
+            " | Allosaurs: " + numAllosaurs +
+            " Carnotaurus: " + numCarnotaurus +
+            " Dilophosaurus: " + numDilophosaurus
+        );
     }
 
-    /**
-     * Empty the field.
-     */
     public void clear()
     {
         field.clear();
         dinosaurs.clear();
+        randomizeVegetation();
     }
 
-    /**
-     * Return whether there is at least one iguanadon and one allosaurus in the field.
-     * @return true if there is at least one iguanadon and one allosaurus in the field.
-     */
     public boolean isViable()
     {
-        boolean herbivoreFound = false;
-        boolean carnivoreFound = false;
-    
-        for(Dinosaur d : dinosaurs) {
-            if(d != null && d.isAlive()) {
-                if(d instanceof Herbivore) herbivoreFound = true;
-                else if(d instanceof Carnivore) carnivoreFound = true;
-            }
-            if(herbivoreFound && carnivoreFound) break;
+        boolean herbFound = false;
+        boolean carniFound = false;
+
+        Iterator<Dinosaur> it = dinosaurs.iterator();
+        while(it.hasNext() && !(herbFound && carniFound)) {
+            Dinosaur d = it.next();
+            if(d == null || !d.isAlive()) continue;
+
+            if(d instanceof Herbivore) herbFound = true;
+            else if(d instanceof Carnivore) carniFound = true;
         }
-    
-        return herbivoreFound && carnivoreFound;
+        return herbFound && carniFound;
     }
-    
-    /**
-     * Get the list of dinosaurs.
-     */
+
     public List<Dinosaur> getDinosaurs()
     {
         return dinosaurs;
     }
 
-    /**
-     * Return the depth of the field.
-     * @return The depth of the field.
-     */
     public int getDepth()
     {
         return depth;
     }
-    
-    /**
-     * Return the width of the field.
-     * @return The width of the field.
-     */
+
     public int getWidth()
     {
         return width;
+    }
+
+    // ---------------------------
+    // Vegetation
+    // ---------------------------
+
+    public int getVegetationAt(Location location)
+    {
+        return vegetation[location.row()][location.col()];
+    }
+
+    /**
+     * Consume up to 'amount' vegetation at a tile.
+     * @return how much was actually consumed.
+     */
+    public int consumeVegetationAt(Location location, int amount)
+    {
+        if(amount <= 0) return 0;
+        int r = location.row();
+        int c = location.col();
+        int available = vegetation[r][c];
+        int taken = Math.min(available, amount);
+        vegetation[r][c] = available - taken;
+        return taken;
+    }
+
+    /**
+     * Vegetation regrows a bit everywhere each step.
+     * Night regrows slightly faster; day slightly slower.
+     */
+    public void regrowVegetation(TimeOfDay timeOfDay)
+    {
+        int grow = (timeOfDay == TimeOfDay.NIGHT) ? 1 : 1; // slower
+    
+        for(int r = 0; r < depth; r++) {
+            for(int c = 0; c < width; c++) {
+                // probabilistic regrowth so it doesn't fill evenly
+                if(rand.nextDouble() < 0.35) {  // 35% of tiles regrow each step
+                    int v = vegetation[r][c] + grow;
+                    if(v > 100) v = 100;
+                    vegetation[r][c] = v;
+                }
+            }
+        }
+    }   
+
+    /**
+     * Copy the vegetation layer from an existing field into this one.
+     * (Needed because Simulator creates a new Field each step.)
+     */
+    public void copyVegetationFrom(Field other)
+    {
+        for(int r = 0; r < depth; r++) {
+            System.arraycopy(other.vegetation[r], 0, this.vegetation[r], 0, width);
+        }
+    }
+
+    private void randomizeVegetation()
+    {
+        for(int r = 0; r < depth; r++) {
+            for(int c = 0; c < width; c++) {
+                // Start with moderate vegetation so herbivores don't instantly starve.
+                vegetation[r][c] = 40 + rand.nextInt(41); // 40..80
+            }
+        }
     }
 }
