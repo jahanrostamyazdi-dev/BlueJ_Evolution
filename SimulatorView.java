@@ -27,6 +27,10 @@ public class SimulatorView extends JFrame
     private final JLabel population;
     private final FieldView fieldView;
     
+    //For the legend to show the colours and species
+    private final JLabel legendLabel;
+    private final JPanel legendPanel;
+    
     // A map for storing colors for participants in the simulation
     private final Map<Class<?>, Color> colors;
     // A statistics object computing and storing simulation information
@@ -63,7 +67,15 @@ public class SimulatorView extends JFrame
         Container contents = getContentPane();
         contents.add(stepLabel, BorderLayout.NORTH);
         contents.add(fieldView, BorderLayout.CENTER);
-        contents.add(population, BorderLayout.SOUTH);
+        // Bottom area: population + legend
+        legendLabel = new JLabel("Legend: ♀ brighter  |  ♂ darker", JLabel.CENTER);
+        legendPanel = new JPanel();
+        legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
+        legendPanel.add(population);
+        legendPanel.add(legendLabel);
+        legendPanel.add(createSpeciesLegendPanel());
+        contents.add(legendPanel, BorderLayout.SOUTH);
+        //pack it all to the screen
         pack();
         setVisible(true);
     }
@@ -93,6 +105,59 @@ public class SimulatorView extends JFrame
         }
     }
 
+    /**
+     * Builds a legend panel showing each species with male/female shade swatches.
+     * Male = darker, Female = brighter (same hue).
+     */
+    private JPanel createSpeciesLegendPanel()
+    {
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 12, 2));
+    
+        addLegendItem(panel, "Iguanadon", getColor(Iguanadon.class));
+        addLegendItem(panel, "Allosaurus", getColor(Allosaurus.class));
+        addLegendItem(panel, "Carnotaurus", getColor(Carnotaurus.class));
+        addLegendItem(panel, "Dilophosaurus", getColor(Dilophosaurus.class));
+        addLegendItem(panel, "Diabloceratops", getColor(Diabloceratops.class));
+        addLegendItem(panel, "Ankylosaurus", getColor(Ankylosaurus.class));
+    
+        return panel;
+    }
+    
+    /**
+     * Adds one legend item: ♂ swatch (darker) + ♀ swatch (brighter) + species name.
+     */
+    private void addLegendItem(JPanel panel, String name, Color baseColor)
+    {
+        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+    
+        // Match the same factors used in getColorForDinosaur(...)
+        Color maleColor = adjustBrightness(baseColor, 0.80f);
+        Color femaleColor = adjustBrightness(baseColor, 1.30f);
+    
+        JLabel maleSwatch = new JLabel("■");
+        maleSwatch.setForeground(maleColor);
+        maleSwatch.setFont(maleSwatch.getFont().deriveFont(Font.BOLD, 14f));
+    
+        JLabel maleText = new JLabel("♂");
+    
+        JLabel femaleSwatch = new JLabel("■");
+        femaleSwatch.setForeground(femaleColor);
+        femaleSwatch.setFont(femaleSwatch.getFont().deriveFont(Font.BOLD, 14f));
+    
+        JLabel femaleText = new JLabel("♀");
+    
+        JLabel speciesText = new JLabel(" " + name);
+    
+        item.add(maleSwatch);
+        item.add(maleText);
+        item.add(femaleSwatch);
+        item.add(femaleText);
+        item.add(speciesText);
+    
+        panel.add(item);
+    }
+    
     /**
      * Show the current status of the field.
      * @param step Which iteration step it is.
