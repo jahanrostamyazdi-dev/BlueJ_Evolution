@@ -9,12 +9,14 @@ public class Iguanadon extends Herbivore
     private static final int MAX_LITTER_SIZE = 4;
 
     private static final int MAX_ENERGY = 20;
-    private static final int BREEDING_ENERGY_THRESHOLD = 12;
-    private static final int ENERGY_COST_PER_BABY = 2;
+    private static final int BREEDING_ENERGY_THRESHOLD = 8;
+    private static final int ENERGY_COST_PER_BABY = 1;
 
     // Vegetation eating
-    private static final int BITE_SIZE = 12;        // how much vegetation it can eat per step
+    private static final int BITE_SIZE = 40;        // how much vegetation it can eat per step
     private static final int ENERGY_PER_VEG = 6;    // 1 energy per 6 veg consumed
+    
+    private static final int MIN_VEG_TO_BREED = 55;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -39,6 +41,9 @@ public class Iguanadon extends Herbivore
         consumeEnergy(1);
         if(!isAlive()) return;
 
+        // Eat on the tile you end up on (affects nextFieldState vegetation)
+        eat(nextFieldState);
+        
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
         if(!free.isEmpty()) {
             giveBirth(currentField, nextFieldState, free);
@@ -53,9 +58,6 @@ public class Iguanadon extends Herbivore
             setDead();
             return;
         }
-
-        // Eat on the tile you end up on (affects nextFieldState vegetation)
-        eat(nextFieldState);
     }
 
     private void eat(Field nextFieldState)
@@ -110,7 +112,9 @@ public class Iguanadon extends Herbivore
         if(age < BREEDING_AGE) return 0;
         if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
-
+        
+        if(currentField.getVegetationAt(getLocation()) < MIN_VEG_TO_BREED) return 0;
+        
         if(rand.nextDouble() <= BREEDING_PROBABILITY) {
             return rand.nextInt(MAX_LITTER_SIZE) + 1;
         }

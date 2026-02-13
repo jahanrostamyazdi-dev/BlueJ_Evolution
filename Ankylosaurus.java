@@ -9,11 +9,11 @@ public class Ankylosaurus extends Herbivore
     private static final int MAX_LITTER_SIZE = 1;
 
     private static final int MAX_ENERGY = 28;
-    private static final int BREEDING_ENERGY_THRESHOLD = 18;
-    private static final int ENERGY_COST_PER_BABY = 4;
+    private static final int BREEDING_ENERGY_THRESHOLD = 12;
+    private static final int ENERGY_COST_PER_BABY = 2;
 
-    private static final int BITE_SIZE = 8;
-    private static final int ENERGY_PER_VEG = 8;
+    private static final int BITE_SIZE = 28;
+    private static final int ENERGY_PER_VEG = 6;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -38,6 +38,8 @@ public class Ankylosaurus extends Herbivore
         consumeEnergy(1);
         if(!isAlive()) return;
 
+        eat(nextFieldState);
+        
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
         if(!free.isEmpty()) {
             giveBirth(currentField, nextFieldState, free);
@@ -51,8 +53,6 @@ public class Ankylosaurus extends Herbivore
             setDead();
             return;
         }
-
-        eat(nextFieldState);
     }
 
     private void eat(Field nextFieldState)

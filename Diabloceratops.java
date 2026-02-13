@@ -9,11 +9,11 @@ public class Diabloceratops extends Herbivore
     private static final int MAX_LITTER_SIZE = 2;
 
     private static final int MAX_ENERGY = 24;
-    private static final int BREEDING_ENERGY_THRESHOLD = 14;
-    private static final int ENERGY_COST_PER_BABY = 3;
+    private static final int BREEDING_ENERGY_THRESHOLD = 10;
+    private static final int ENERGY_COST_PER_BABY = 2;
 
-    private static final int BITE_SIZE = 10;
-    private static final int ENERGY_PER_VEG = 7;
+    private static final int BITE_SIZE = 32;
+    private static final int ENERGY_PER_VEG = 5;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -38,6 +38,8 @@ public class Diabloceratops extends Herbivore
         consumeEnergy(1);
         if(!isAlive()) return;
 
+        eat(nextFieldState);
+        
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
         if(!free.isEmpty()) {
             giveBirth(currentField, nextFieldState, free);
@@ -51,8 +53,6 @@ public class Diabloceratops extends Herbivore
             setDead();
             return;
         }
-
-        eat(nextFieldState);
     }
 
     private void eat(Field nextFieldState)

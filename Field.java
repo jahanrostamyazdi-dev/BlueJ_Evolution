@@ -211,7 +211,7 @@ public class Field
         for(int r = 0; r < depth; r++) {
             for(int c = 0; c < width; c++) {
                 // Start with moderate vegetation so herbivores don't instantly starve.
-                vegetation[r][c] = 40 + rand.nextInt(41); // 40..80
+                vegetation[r][c] = 60 + rand.nextInt(41); // 60..100
             }
         }
     }

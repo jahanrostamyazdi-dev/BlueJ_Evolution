@@ -73,7 +73,13 @@ public class Allosaurus extends Carnivore
                 nextFieldState.placeDinosaur(this, nextLocation);
             }
             else {
-                setDead();
+                // If nowhere to move, just stay put (prevents predators dying in crowds)
+                Location here = getLocation();
+                if(here != null && nextFieldState.getDinosaurAt(here) == null) {
+                    nextFieldState.placeDinosaur(this, here);
+                } else {
+                    setDead();
+                }
             }
         }
     }

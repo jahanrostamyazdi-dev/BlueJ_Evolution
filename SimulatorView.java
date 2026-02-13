@@ -31,8 +31,8 @@ public class SimulatorView extends JFrame
         setColor(Allosaurus.class, Color.blue);
         setColor(Carnotaurus.class, Color.red);
         setColor(Dilophosaurus.class, Color.magenta);
-        setColor(Diabloceratops.class, Color.green);
-        setColor(Ankylosaurus.class, Color.black);
+        setColor(Diabloceratops.class, Color.gray);
+        setColor(Ankylosaurus.class, Color.pink);
 
         setTitle("Dinosaur Ecosystem Simulation");
         stepLabel = new JLabel("Step: 0", JLabel.CENTER);
