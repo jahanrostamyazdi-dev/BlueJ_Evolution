@@ -26,6 +26,12 @@ public class Diabloceratops extends Herbivore
         restoreToFullEnergy();
     }
 
+    @Override
+    public int getDefence()
+    {
+        return 8; // medium defence
+    }
+    
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();

@@ -1,7 +1,11 @@
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+/**
+ * Dilophosaurus: nocturnal.
+ * - Sleeps in DAY (no hunting, no energy drain, tries to stay in place)
+ * - Hunts at NIGHT (adjacent hunt)
+ * - Uses unified Attack/Defence combat model via tryKill(...)
+ */
 public class Dilophosaurus extends Carnivore
 {
     private static final int BREEDING_AGE = 10;
@@ -10,8 +14,11 @@ public class Dilophosaurus extends Carnivore
     private static final int MAX_LITTER_SIZE = 3;
 
     private static final int FOOD_VALUE = 14;
-    private static final int BREEDING_ENERGY_THRESHOLD = 5;
+
+    private static final int BREEDING_ENERGY_THRESHOLD = 6;
     private static final int ENERGY_COST_PER_BABY = 2;
+
+    private static final double BASE_KILL_CHANCE = 0.90;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -23,57 +30,63 @@ public class Dilophosaurus extends Carnivore
 
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
+
             int minStart = (int)(getMaxEnergy() * 0.60);
             setEnergy(minStart + rand.nextInt(getMaxEnergy() - minStart + 1));
-        } else {
+        }
+        else {
             age = 0;
             restoreToFullEnergy();
         }
     }
 
+    @Override
+    public int getAttack()
+    {
+        return 6;
+    }
+
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();
-    
-        // If it died of old age, stop immediately (prevents null location assertions).
+
         if(!isAlive()) {
             return;
         }
-    
-        // DAY: sleep (no hunting, no energy drain, try to stay put)
+
+        // DAY: sleep (no hunting, no energy drain)
         if(TimeManager.isDay()) {
             List<Location> freeLocations =
                 nextFieldState.getFreeAdjacentLocations(getLocation());
-    
+
             if(!freeLocations.isEmpty()) {
                 giveBirth(currentField, nextFieldState, freeLocations);
             }
-    
+
             Location here = getLocation();
             if(here != null && nextFieldState.getDinosaurAt(here) == null) {
                 nextFieldState.placeDinosaur(this, here);
                 return;
             }
-            // If can't stay put, fall through to normal movement below.
+            // If can't stay, fall through.
         }
-    
-        // NIGHT: active hunting + energy drain
+
+        // NIGHT: active + energy drain
         consumeEnergy(1);
-    
+
         if(isAlive()) {
             List<Location> freeLocations =
                 nextFieldState.getFreeAdjacentLocations(getLocation());
-    
+
             if(!freeLocations.isEmpty()) {
                 giveBirth(currentField, nextFieldState, freeLocations);
             }
-    
+
             Location nextLocation = findFood(currentField);
-    
             if(nextLocation == null && !freeLocations.isEmpty()) {
                 nextLocation = freeLocations.remove(0);
             }
-    
+
             if(nextLocation != null) {
                 setLocation(nextLocation);
                 nextFieldState.placeDinosaur(this, nextLocation);
@@ -94,20 +107,21 @@ public class Dilophosaurus extends Carnivore
 
     private Location findFood(Field field)
     {
-        // Daytime: does not hunt.
+        // Only hunts at night (day returns null)
         if(TimeManager.isDay()) return null;
-    
-        // Nighttime: hunts adjacent (stronger at night)
-        List<Location> search = field.getAdjacentLocations(getLocation());
-    
-        for(Location loc : search) {
-            Dinosaur dinosaur = field.getDinosaurAt(loc);
-    
-            double huntMultiplier = 1.25; // strong night hunter + prey less aware
-    
-            if(dinosaur instanceof Iguanadon iguanadon && iguanadon.isAlive()) {
-                if(rand.nextDouble() <= 0.90 * huntMultiplier) {
-                    iguanadon.setDead();
+
+        List<Location> adjacent = field.getAdjacentLocations(getLocation());
+
+        double timeMod = 1.25; // strong at night
+
+        for(Location loc : adjacent) {
+            Dinosaur prey = field.getDinosaurAt(loc);
+            if(prey == null || !prey.isAlive()) continue;
+
+            // Dilophosaurus hunts Iguanadon only (current rule)
+            if(prey instanceof Iguanadon) {
+                if(tryKill(prey, BASE_KILL_CHANCE, timeMod)) {
+                    prey.setDead();
                     restoreToFullEnergy();
                     return loc;
                 }

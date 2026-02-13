@@ -26,6 +26,12 @@ public class Ankylosaurus extends Herbivore
         restoreToFullEnergy();
     }
 
+    @Override
+    public int getDefence()
+    {
+        return 12; // high defence (armoured)
+    }
+    
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();

@@ -1,7 +1,11 @@
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+/**
+ * Allosaurus: strong predator.
+ * - Hunts herbivores (Iguanadon, Diabloceratops, Ankylosaurus)
+ * - Night vision: searches radius 2 at NIGHT, adjacent in DAY
+ * - Uses unified Attack/Defence combat model via tryKill(...)
+ */
 public class Allosaurus extends Carnivore
 {
     private static final int BREEDING_AGE = 15;
@@ -9,11 +13,15 @@ public class Allosaurus extends Carnivore
     private static final double BREEDING_PROBABILITY = 0.08;
     private static final int MAX_LITTER_SIZE = 2;
 
+    // Energy buffer (max energy + restored on eating)
     private static final int FOOD_VALUE = 18;
-    private static final int BREEDING_ENERGY_THRESHOLD = 6;
+
+    // Breeding constraints (female only + energy threshold + adjacent male)
+    private static final int BREEDING_ENERGY_THRESHOLD = 8;
     private static final int ENERGY_COST_PER_BABY = 2;
 
-    private static final double ANKYLO_KILL_CHANCE = 0.20;
+    // Combat tuning
+    private static final double BASE_KILL_CHANCE = 0.95;
 
     private static final Random rand = Randomizer.getRandom();
 
@@ -25,12 +33,21 @@ public class Allosaurus extends Carnivore
 
         if(randomAge) {
             age = rand.nextInt(MAX_AGE);
+
+            // Start predators with a reasonable amount of energy (prevents instant die-off)
             int minStart = (int)(getMaxEnergy() * 0.60);
             setEnergy(minStart + rand.nextInt(getMaxEnergy() - minStart + 1));
-        } else {
+        }
+        else {
             age = 0;
             restoreToFullEnergy();
         }
+    }
+
+    @Override
+    public int getAttack()
+    {
+        return 10;
     }
 
     public void act(Field currentField, Field nextFieldState)
@@ -54,7 +71,8 @@ public class Allosaurus extends Carnivore
             if(nextLocation != null) {
                 setLocation(nextLocation);
                 nextFieldState.placeDinosaur(this, nextLocation);
-            } else {
+            }
+            else {
                 setDead();
             }
         }
@@ -70,34 +88,20 @@ public class Allosaurus extends Carnivore
 
     private Location findFood(Field field)
     {
-        // At night, Allosaurus can "see" further (radius 2).
         List<Location> search = TimeManager.isNight()
-                ? getLocationsWithinRadius(field, getLocation(), 2)
+                ? getLocationsWithinRadius(field, getLocation(), 2)   // night vision
                 : field.getAdjacentLocations(getLocation());
-    
+
+        double timeMod = TimeManager.isNight() ? 1.15 : 1.0;
+
         for(Location loc : search) {
-            Dinosaur dinosaur = field.getDinosaurAt(loc);
-    
-            // Night hunting bonus (prey less aware)
-            double huntMultiplier = TimeManager.isNight() ? 1.15 : 1.0;
-    
-            if(dinosaur instanceof Iguanadon iguanadon && iguanadon.isAlive()) {
-                if(rand.nextDouble() <= 0.90 * huntMultiplier) {
-                    iguanadon.setDead();
-                    restoreToFullEnergy();
-                    return loc;
-                }
-            }
-            else if(dinosaur instanceof Diabloceratops diabloceratops && diabloceratops.isAlive()) {
-                if(rand.nextDouble() <= 0.75 * huntMultiplier) {
-                    diabloceratops.setDead();
-                    restoreToFullEnergy();
-                    return loc;
-                }
-            }
-            else if(dinosaur instanceof Ankylosaurus ankylosaurus && ankylosaurus.isAlive()) {
-                if(rand.nextDouble() <= ANKYLO_KILL_CHANCE * huntMultiplier) {
-                    ankylosaurus.setDead();
+            Dinosaur prey = field.getDinosaurAt(loc);
+            if(prey == null || !prey.isAlive()) continue;
+
+            // Allosaurus can hunt all three herbivores
+            if(prey instanceof Iguanadon || prey instanceof Diabloceratops || prey instanceof Ankylosaurus) {
+                if(tryKill(prey, BASE_KILL_CHANCE, timeMod)) {
+                    prey.setDead();
                     restoreToFullEnergy();
                     return loc;
                 }
@@ -105,14 +109,10 @@ public class Allosaurus extends Carnivore
         }
         return null;
     }
-    
-    /**
-     * Returns all locations within a square radius (Chebyshev distance) around a centre.
-     * Radius 1 = adjacent; radius 2 = two tiles out.
-     */
+
     private List<Location> getLocationsWithinRadius(Field field, Location centre, int radius)
     {
-        java.util.Set<Location> set = new java.util.HashSet<>();
+        Set<Location> set = new HashSet<>();
         for(int r = centre.row() - radius; r <= centre.row() + radius; r++) {
             for(int c = centre.col() - radius; c <= centre.col() + radius; c++) {
                 if(r >= 0 && r < field.getDepth() && c >= 0 && c < field.getWidth()) {
@@ -121,8 +121,8 @@ public class Allosaurus extends Carnivore
                 }
             }
         }
-        java.util.List<Location> list = new java.util.ArrayList<>(set);
-        java.util.Collections.shuffle(list, Randomizer.getRandom());
+        List<Location> list = new ArrayList<>(set);
+        Collections.shuffle(list, Randomizer.getRandom());
         return list;
     }
 

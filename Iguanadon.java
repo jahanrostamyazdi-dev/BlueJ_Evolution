@@ -26,6 +26,12 @@ public class Iguanadon extends Herbivore
         restoreToFullEnergy();
     }
 
+    @Override
+    public int getDefence()
+    {
+        return 4; // low defence
+    }
+    
     public void act(Field currentField, Field nextFieldState)
     {
         incrementAge();

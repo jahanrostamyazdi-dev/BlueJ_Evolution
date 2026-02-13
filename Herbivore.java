@@ -1,17 +1,16 @@
 /**
  * A herbivore is a Dinosaur that does not hunt other dinosaurs.
- * This class exists to share herbivore-specific behaviour later
- * (e.g. eating vegetation, herd behaviour, defence, etc.).
+ * Provides a defence rating used by the combat system.
  */
 public abstract class Herbivore extends Dinosaur
 {
-    /**
-     * Create a herbivore at a location.
-     * @param location The herbivore's starting location.
-     * @param maxEnergy Maximum energy for this herbivore.
-     */
     public Herbivore(Location location, int maxEnergy)
     {
         super(location, maxEnergy);
     }
+
+    /**
+     * @return defence rating for this herbivore (higher = harder to kill)
+     */
+    public abstract int getDefence();
 }
