@@ -69,6 +69,7 @@ public class Simulator
         field = new Field(depth, width);
         view = new SimulatorView(depth, width);
         reset();
+        openTuningWindow();
     }
 
     public void runLongSimulation()
