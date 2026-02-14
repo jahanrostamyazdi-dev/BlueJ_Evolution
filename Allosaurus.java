@@ -154,6 +154,7 @@ public class Allosaurus extends Carnivore
 
     private int breed(Field currentField)
     {
+        if(!canBreedThisStep()) return 0;
         if(!isFemale()) return 0;
         if(!canBreed()) return 0;
         if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;

@@ -2,53 +2,50 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Common elements of all dinosaurs.
- *
- * Shared systems:
- * - Energy (0..maxEnergy)
- * - Sex (MALE/FEMALE) assigned at birth
- * - Utility method to check for adjacent male of same species
+ * Common elements of all dinosaurs:
+ * - alive/location
+ * - sex (male/female)
+ * - energy
+ * - disease (infected + timer + optional immunity)
  */
 public abstract class Dinosaur
 {
-    // Whether the dinosaur is alive or not.
+    private static final Random rand = Randomizer.getRandom();
+
+    // Core state
     private boolean alive;
-    // The dinosaur's position.
     private Location location;
 
-    // Energy system
+    // Sex
+    private final boolean female;
+
+    // Energy
     private final int maxEnergy;
     private int energy;
 
-    // Sex system
-    private final Sex sex;
+    // Disease state
+    private boolean infected;
+    private int infectionTimer;   // steps remaining
+    private int immunityTimer;    // steps remaining
 
-    // Shared random generator
-    private static final Random rand = Randomizer.getRandom();
-
-    /**
-     * Constructor for objects of class Dinosaur.
-     * @param location The dinosaur's location.
-     * @param maxEnergy The maximum energy this dinosaur can have.
-     */
     public Dinosaur(Location location, int maxEnergy)
     {
         this.alive = true;
         this.location = location;
-        this.maxEnergy = maxEnergy;
-        this.energy = maxEnergy;
 
-        // Assign a random sex at birth.
-        this.sex = rand.nextBoolean() ? Sex.MALE : Sex.FEMALE;
+        this.female = rand.nextBoolean();
+
+        this.maxEnergy = maxEnergy;
+        this.energy = maxEnergy;  // default: start full
+        this.infected = false;
+        this.infectionTimer = 0;
+        this.immunityTimer = 0;
     }
 
-    /**
-     * Act.
-     * @param currentField The current state of the field.
-     * @param nextFieldState The new state being built.
-     */
+    // --- Simulation ---
     public abstract void act(Field currentField, Field nextFieldState);
 
+    // --- Alive / location ---
     public boolean isAlive()
     {
         return alive;
@@ -70,79 +67,134 @@ public abstract class Dinosaur
         this.location = location;
     }
 
-    // -------------------------
-    // Energy API (shared)
-    // -------------------------
+    // --- Sex ---
+    public boolean isFemale()
+    {
+        return female;
+    }
+
+    /**
+     * Used by breeding logic: female requires at least one adjacent male of same species.
+     */
+    public boolean hasAdjacentMaleOfSameSpecies(Field currentField)
+    {
+        List<Location> adjacent = currentField.getAdjacentLocations(getLocation());
+        for(Location loc : adjacent) {
+            Dinosaur d = currentField.getDinosaurAt(loc);
+            if(d != null && d.isAlive() && d.getClass() == this.getClass()) {
+                if(!d.isFemale()) return true;
+            }
+        }
+        return false;
+    }
+
+    // --- Energy ---
+    public int getMaxEnergy()
+    {
+        return maxEnergy;
+    }
 
     public int getEnergy()
     {
         return energy;
     }
 
-    public int getMaxEnergy()
+    protected void setEnergy(int value)
     {
-        return maxEnergy;
+        energy = Math.max(0, Math.min(maxEnergy, value));
+        if(energy <= 0) setDead();
     }
 
-    protected void setEnergy(int newEnergy)
-    {
-        energy = Math.min(maxEnergy, Math.max(0, newEnergy));
-        if(energy <= 0) {
-            setDead();
-        }
-    }
-
-    protected void consumeEnergy(int amount)
-    {
-        if(amount <= 0) return;
-        setEnergy(energy - amount);
-    }
-
-    protected void gainEnergy(int amount)
-    {
-        if(amount <= 0) return;
-        setEnergy(energy + amount);
-    }
-
-    protected void restoreToFullEnergy()
+    public void restoreToFullEnergy()
     {
         setEnergy(maxEnergy);
     }
 
-    // -------------------------
-    // Sex API (shared)
-    // -------------------------
-
-    public Sex getSex()
+    public void gainEnergy(int amount)
     {
-        return sex;
+        if(!alive) return;
+        if(amount <= 0) return;
+        setEnergy(energy + amount);
     }
 
-    public boolean isMale()
+    public void consumeEnergy(int amount)
     {
-        return sex == Sex.MALE;
+        if(!alive) return;
+        if(amount <= 0) return;
+        setEnergy(energy - amount);
     }
 
-    public boolean isFemale()
+    // --- Disease API ---
+    public boolean isInfected()
     {
-        return sex == Sex.FEMALE;
+        return infected;
+    }
+
+    public boolean isImmune()
+    {
+        return immunityTimer > 0;
+    }
+
+    public boolean canBeInfected()
+    {
+        return isAlive() && !infected && immunityTimer <= 0;
+    }
+
+    public void infect(int duration)
+    {
+        if(!canBeInfected()) return;
+
+        infected = true;
+        infectionTimer = Math.max(1, duration);
+        // If you want infection to clear immunity, keep immunityTimer as-is or set to 0.
+        // We'll clear immunity so infection is meaningful.
+        immunityTimer = 0;
     }
 
     /**
-     * Returns true if there is at least one adjacent MALE dinosaur
-     * of the same species (same class) in the CURRENT field.
+     * Called once per step (from Simulator) BEFORE act().
+     * - Infected: extra energy drain, spread attempt
+     * - Timer expires: survive if energy high enough (gain immunity), else die
+     * - Immunity timer ticks down
      */
-    protected boolean hasAdjacentMaleOfSameSpecies(Field currentField)
+    public void tickDisease(Field currentField)
     {
-        List<Location> adjacent = currentField.getAdjacentLocations(getLocation());
-        for(Location loc : adjacent) {
-            Dinosaur d = currentField.getDinosaurAt(loc);
-            if(d != null && d.isAlive()) {
-                if(d.getClass() == this.getClass() && d.isMale()) {
-                    return true;
-                }
+        if(!isAlive()) return;
+
+        // Tick immunity if present
+        if(immunityTimer > 0) {
+            immunityTimer--;
+        }
+
+        if(!infected) return;
+
+        // While infected, drain extra energy (weakness)
+        consumeEnergy(DiseaseManager.getExtraEnergyDrainWhileInfected());
+        if(!isAlive()) return;
+
+        // Spread to adjacent dinos
+        DiseaseManager.attemptAdjacentSpread(this, currentField);
+
+        // Count down infection
+        infectionTimer--;
+
+        if(infectionTimer <= 0) {
+            // Infection ends: survive if energy high enough
+            if(getEnergy() >= DiseaseManager.getSurviveEnergyThreshold()) {
+                infected = false;
+                infectionTimer = 0;
+                immunityTimer = DiseaseManager.getImmunityDuration();
+            } else {
+                setDead();
             }
         }
-        return false;
+    }
+
+    /**
+     * Use this in breeding: infected dinos cannot breed.
+     */
+    public boolean canBreedThisStep()
+    {
+        return isAlive() && !infected;
     }
 }

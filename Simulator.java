@@ -1,22 +1,17 @@
 import java.util.*;
 
-/**
- * Dinosaur ecosystem simulator.
- */
 public class Simulator
 {
     private static final int DEFAULT_WIDTH = 120;
     private static final int DEFAULT_DEPTH = 80;
 
-    // You likely already changed these for 6 species elsewhere.
-    // Keep your current probabilities if you already tuned them.
-    private static final double ALLOSAURUS_CREATION_PROBABILITY = 0.012;
-    private static final double CARNOTAURUS_CREATION_PROBABILITY = 0.010;
-    private static final double DILOPHOSAURUS_CREATION_PROBABILITY = 0.010;
+    private static final double ALLOSAURUS_CREATION_PROBABILITY = 0.010;
+    private static final double CARNOTAURUS_CREATION_PROBABILITY = 0.008;
+    private static final double DILOPHOSAURUS_CREATION_PROBABILITY = 0.008;
 
-    private static final double IGUANADON_CREATION_PROBABILITY = 0.070;
+    private static final double IGUANADON_CREATION_PROBABILITY = 0.060;
     private static final double DIABLOCERATOPS_CREATION_PROBABILITY = 0.025;
-    private static final double ANKYLOSAURUS_CREATION_PROBABILITY = 0.015;
+    private static final double ANKYLOSAURUS_CREATION_PROBABILITY = 0.020;
 
     private Field field;
     private int step;
@@ -38,7 +33,6 @@ public class Simulator
 
         field = new Field(depth, width);
         view = new SimulatorView(depth, width);
-
         reset();
     }
 
@@ -59,33 +53,62 @@ public class Simulator
     public void simulateOneStep()
     {
         step++;
-    
+
         TimeManager.updateForStep(step);
         WeatherManager.updateOneStep();
-    
+
         Field nextFieldState = new Field(field.getDepth(), field.getWidth());
         nextFieldState.copyVegetationFrom(field);
-    
-        for(Dinosaur d : field.getDinosaurs()) {
-            d.act(field, nextFieldState);
+
+        // IMPORTANT: tick disease BEFORE acting so:
+        // - infected loses extra energy
+        // - breeding can be disabled
+        // - infection can spread based on current positions
+        List<Dinosaur> dinosaurs = field.getDinosaurs();
+        
+        
+        
+        for(Dinosaur d : dinosaurs) {
+            if(d != null && d.isAlive()) {
+                DiseaseManager.maybeStartNewOutbreak(field);
+                d.tickDisease(field);
+            }
         }
-    
-        // Regrow AFTER animals eat
+
+        for(Dinosaur d : dinosaurs) {
+            if(d != null && d.isAlive()) {
+                d.act(field, nextFieldState);
+            }
+        }
+
         nextFieldState.regrowVegetation(TimeManager.getTimeOfDay(), WeatherManager.getWeather());
-    
+
         field = nextFieldState;
-    
+
         reportStats();
         view.showStatus(step, field, TimeManager.getTimeOfDay(), WeatherManager.getWeather());
     }
 
+    public void infectRandomDinosaur()
+    {
+        List<Dinosaur> dinos = field.getDinosaurs();
+        Collections.shuffle(dinos, Randomizer.getRandom());
+    
+        for(Dinosaur d : dinos) {
+            if(d != null && d.canBeInfected()) {
+                d.infect(DiseaseManager.randomInfectionDuration());
+                break;
+            }
+        }
+    }
+    
     public void reset()
     {
         step = 0;
         TimeManager.reset();
         WeatherManager.reset();
         populate();
-        view.showStatus(step, field, TimeManager.getTimeOfDay());
+        view.showStatus(step, field, TimeManager.getTimeOfDay(), WeatherManager.getWeather());
     }
 
     private void populate()
@@ -99,7 +122,6 @@ public class Simulator
 
                 double roll = rand.nextDouble();
 
-                // predators first
                 if(roll <= ALLOSAURUS_CREATION_PROBABILITY) {
                     field.placeDinosaur(new Allosaurus(true, location), location);
                 }
@@ -110,7 +132,6 @@ public class Simulator
                     field.placeDinosaur(new Dilophosaurus(true, location), location);
                 }
                 else {
-                    // herbivores
                     double herbRoll = rand.nextDouble();
                     if(herbRoll <= IGUANADON_CREATION_PROBABILITY) {
                         field.placeDinosaur(new Iguanadon(true, location), location);
@@ -133,11 +154,7 @@ public class Simulator
 
     private void delay(int milliseconds)
     {
-        try {
-            Thread.sleep(milliseconds);
-        }
-        catch(InterruptedException e) {
-            // ignore
-        }
+        try { Thread.sleep(milliseconds); }
+        catch(InterruptedException e) { }
     }
 }

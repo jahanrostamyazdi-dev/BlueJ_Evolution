@@ -1,8 +1,8 @@
 import java.util.Random;
 
 /**
- * A carnivore is a Dinosaur that hunts other dinosaurs for food.
- * Includes a shared combat helper using an Attack/Defence probability model.
+ * Carnivore base class with unified attack/defence kill model.
+ * Also handles infection transfer when eating infected prey.
  */
 public abstract class Carnivore extends Dinosaur
 {
@@ -13,13 +13,9 @@ public abstract class Carnivore extends Dinosaur
         super(location, maxEnergy);
     }
 
-    /**
-     * @return attack rating for this carnivore (higher = better hunter)
-     */
     public abstract int getAttack();
 
     /**
-     * Attempt to kill a prey dinosaur using:
      * successChance = baseChance * (attack/(attack+defence)) * timeOfDayModifier
      */
     protected boolean tryKill(Dinosaur prey, double baseChance, double timeOfDayModifier)
@@ -36,10 +32,18 @@ public abstract class Carnivore extends Dinosaur
         double ratio = (attack + defence) == 0 ? 0.0 : ((double) attack / (attack + defence));
         double chance = baseChance * ratio * timeOfDayModifier;
 
-        // clamp
         if(chance < 0) chance = 0;
         if(chance > 1) chance = 1;
 
-        return rand.nextDouble() <= chance;
+        boolean success = rand.nextDouble() <= chance;
+
+        if(success) {
+            // If prey is infected, predator has high chance of becoming infected.
+            if(prey.isInfected()) {
+                DiseaseManager.onPredatorAteInfectedPrey(this);
+            }
+        }
+
+        return success;
     }
 }

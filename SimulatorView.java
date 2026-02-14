@@ -12,6 +12,10 @@ public class SimulatorView extends JFrame
     private static final Color NIGHT_GRID_BORDER = new Color(40, 40, 40);
     private static final Color NIGHT_TEXT_COLOR = new Color(230, 230, 230);
 
+    // Infection tint (applied as blend)
+    private static final Color INFECTION_TINT = new Color(160, 60, 200);
+    private static final float INFECTION_BLEND = 0.45f;
+
     private final JLabel stepLabel;
     private final FieldView fieldView;
 
@@ -21,6 +25,7 @@ public class SimulatorView extends JFrame
     private final FieldStats stats;
 
     private final Map<Class<?>, Integer> stepCounts = new HashMap<>();
+    private final Map<Class<?>, Integer> infectedCounts = new HashMap<>();
 
     public SimulatorView(int height, int width)
     {
@@ -30,9 +35,9 @@ public class SimulatorView extends JFrame
         setColor(Iguanadon.class, Color.orange);
         setColor(Allosaurus.class, Color.blue);
         setColor(Carnotaurus.class, Color.red);
-        setColor(Dilophosaurus.class, Color.magenta);
+        setColor(Dilophosaurus.class, Color.cyan);
         setColor(Diabloceratops.class, Color.gray);
-        setColor(Ankylosaurus.class, Color.pink);
+        setColor(Ankylosaurus.class, Color.black);
 
         setTitle("Dinosaur Ecosystem Simulation");
         stepLabel = new JLabel("Step: 0", JLabel.CENTER);
@@ -68,37 +73,41 @@ public class SimulatorView extends JFrame
 
     public void showStatus(int step, Field field)
     {
-        showStatus(step, field, TimeOfDay.DAY);
+        showStatus(step, field, TimeOfDay.DAY, WeatherState.CLEAR);
     }
 
-    public void showStatus(int step, Field field, TimeOfDay timeOfDay)
-    {
-        showStatus(step, field, timeOfDay, WeatherManager.getWeather());
-    }
-    
     public void showStatus(int step, Field field, TimeOfDay timeOfDay, WeatherState weather)
     {
         if(!isVisible()) setVisible(true);
-    
+
         boolean night = (timeOfDay == TimeOfDay.NIGHT);
-    
+
         setTitle("Dinosaur Ecosystem Simulation (" + timeOfDay + ", " + weather + ")");
-        stepLabel.setForeground(Color.black);
+        stepLabel.setForeground(night ? NIGHT_TEXT_COLOR : Color.black);
         stepLabel.setText("Step: " + step + " | " + timeOfDay + " | Weather: " + weather);
-    
+
         stats.reset();
         stepCounts.clear();
-    
+        infectedCounts.clear();
+
         fieldView.preparePaint(night);
-    
+
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
                 Location loc = new Location(row, col);
                 Dinosaur dinosaur = field.getDinosaurAt(loc);
-    
+
                 if(dinosaur != null) {
                     stats.incrementCount(dinosaur.getClass());
-                    stepCounts.put(dinosaur.getClass(), stepCounts.getOrDefault(dinosaur.getClass(), 0) + 1);
+
+                    stepCounts.put(dinosaur.getClass(),
+                            stepCounts.getOrDefault(dinosaur.getClass(), 0) + 1);
+
+                    if(dinosaur.isInfected()) {
+                        infectedCounts.put(dinosaur.getClass(),
+                                infectedCounts.getOrDefault(dinosaur.getClass(), 0) + 1);
+                    }
+
                     fieldView.drawMark(col, row, getColorForDinosaur(dinosaur));
                 }
                 else {
@@ -107,20 +116,28 @@ public class SimulatorView extends JFrame
                 }
             }
         }
-    
+
         stats.countFinished();
         updateLegendWithCounts(night);
+
         fieldView.repaint();
     }
 
     private Color getColorForDinosaur(Dinosaur dinosaur)
     {
         Color base = getColor(dinosaur.getClass());
+
+        // sex brightness
         float factor = dinosaur.isFemale() ? 1.30f : 0.80f;
-        return adjustBrightness(base, factor);
+        Color sexColor = adjustBrightness(base, factor);
+
+        // infection tint overlay
+        if(dinosaur.isInfected()) {
+            return blend(sexColor, INFECTION_TINT, INFECTION_BLEND);
+        }
+        return sexColor;
     }
 
-    // Vegetation key uses same colouring as grid.
     private Color getVegetationColor(int veg, boolean night)
     {
         float t = Math.max(0f, Math.min(1f, veg / 100f));
@@ -160,7 +177,6 @@ public class SimulatorView extends JFrame
         herbRow.add(createLegendItemWithCount("Diabloceratops", Diabloceratops.class, night));
         herbRow.add(createLegendItemWithCount("Ankylosaurus", Ankylosaurus.class, night));
 
-        // Vegetation scale row (new)
         JPanel vegRow = createVegetationLegendRow(night);
 
         legendPanel.add(wrapWithPadding(carnRow, 4, 6, 4, 6, night));
@@ -222,7 +238,9 @@ public class SimulatorView extends JFrame
         Color base = getColor(speciesClass);
         Color maleColor = adjustBrightness(base, 0.80f);
         Color femaleColor = adjustBrightness(base, 1.30f);
+
         int count = stepCounts.getOrDefault(speciesClass, 0);
+        int inf = infectedCounts.getOrDefault(speciesClass, 0);
 
         JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         item.setOpaque(true);
@@ -242,7 +260,7 @@ public class SimulatorView extends JFrame
         JLabel femaleText = new JLabel("♀");
         femaleText.setForeground(night ? NIGHT_TEXT_COLOR : Color.black);
 
-        JLabel speciesText = new JLabel(" " + name + ": " + count);
+        JLabel speciesText = new JLabel(" " + name + ": " + count + " (Inf: " + inf + ")");
         speciesText.setForeground(night ? adjustBrightness(base, 1.20f) : base);
 
         item.add(maleSwatch);
@@ -276,6 +294,15 @@ public class SimulatorView extends JFrame
         return Math.max(0f, Math.min(1f, v));
     }
 
+    private Color blend(Color a, Color b, float t)
+    {
+        t = clamp01(t);
+        int r = (int)(a.getRed()   * (1 - t) + b.getRed()   * t);
+        int g = (int)(a.getGreen() * (1 - t) + b.getGreen() * t);
+        int bl = (int)(a.getBlue()  * (1 - t) + b.getBlue()  * t);
+        return new Color(r, g, bl);
+    }
+
     private class FieldView extends JPanel
     {
         private final int GRID_VIEW_SCALING_FACTOR = 6;
@@ -296,7 +323,7 @@ public class SimulatorView extends JFrame
         public Dimension getPreferredSize()
         {
             return new Dimension(gridWidth * GRID_VIEW_SCALING_FACTOR,
-                                 gridHeight * GRID_VIEW_SCALING_FACTOR);
+                    gridHeight * GRID_VIEW_SCALING_FACTOR);
         }
 
         public void preparePaint(boolean night)
@@ -329,8 +356,7 @@ public class SimulatorView extends JFrame
                 Dimension currentSize = getSize();
                 if(size.equals(currentSize)) {
                     g.drawImage(fieldImage, 0, 0, null);
-                }
-                else {
+                } else {
                     g.drawImage(fieldImage, 0, 0, currentSize.width, currentSize.height, null);
                 }
             }
