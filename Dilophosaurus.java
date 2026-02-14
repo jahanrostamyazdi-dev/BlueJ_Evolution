@@ -1,152 +1,69 @@
-import java.util.*;
+import java.util.List;
 
-/**
- * Dilophosaurus: nocturnal.
- * - Sleeps in DAY (no hunting, no energy drain, tries to stay in place)
- * - Hunts at NIGHT (adjacent hunt)
- * - Uses unified Attack/Defence combat model via tryKill(...)
- */
 public class Dilophosaurus extends Carnivore
 {
-    private static final int BREEDING_AGE = 10;
-    private static final int MAX_AGE = 90;
-    private static final double BREEDING_PROBABILITY = 0.09;
-    private static final int MAX_LITTER_SIZE = 3;
-
-    private static final int FOOD_VALUE = 14;
-
-    private static final int BREEDING_ENERGY_THRESHOLD = 6;
-    private static final int ENERGY_COST_PER_BABY = 2;
-
-    private static final double BASE_KILL_CHANCE = 0.90;
-
-    private static final Random rand = Randomizer.getRandom();
-
-    private int age;
-
     public Dilophosaurus(boolean randomAge, Location location)
     {
-        super(location, FOOD_VALUE);
-
+        super(location, Tuning.get(SpeciesType.DILOPHOSAURUS).maxEnergy);
         if(randomAge) {
-            age = rand.nextInt(MAX_AGE);
-
-            int minStart = (int)(getMaxEnergy() * 0.60);
-            setEnergy(minStart + rand.nextInt(getMaxEnergy() - minStart + 1));
-        }
-        else {
-            age = 0;
-            restoreToFullEnergy();
+            int start = (int)(getMaxEnergy() * 0.60);
+            setEnergy(start);
         }
     }
 
     @Override
     public int getAttack()
     {
-        return 6;
+        return Tuning.get(SpeciesType.DILOPHOSAURUS).attack;
+    }
+
+    private double timeKillMod()
+    {
+        SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
+        // hunts only at night: day modifier effectively 0
+        double mod = TimeManager.isNight() ? t.nightKillMod : t.dayKillMod;
+        mod *= WeatherManager.predatorHuntModifier();
+        return mod;
     }
 
     public void act(Field currentField, Field nextFieldState)
     {
-        incrementAge();
+        consumeEnergy(Tuning.get(SpeciesType.DILOPHOSAURUS).stepEnergyLoss);
+        if(!isAlive()) return;
 
-        if(!isAlive()) {
-            return;
-        }
+        SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
 
-        // DAY: sleep (no hunting, no energy drain)
-        if(TimeManager.isDay()) {
-            List<Location> freeLocations =
-                nextFieldState.getFreeAdjacentLocations(getLocation());
-
-            if(!freeLocations.isEmpty()) {
-                giveBirth(currentField, nextFieldState, freeLocations);
-            }
-
+        // Sleep/day behaviour: if day, just stay put (no hunting/movement)
+        if(t.huntOnlyAtNight && TimeManager.isDay()) {
             Location here = getLocation();
             if(here != null && nextFieldState.getDinosaurAt(here) == null) {
                 nextFieldState.placeDinosaur(this, here);
-                return;
             }
-            // If can't stay, fall through.
+            return;
         }
 
-        // NIGHT: active + energy drain
-        consumeEnergy(1);
+        List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
 
-        if(isAlive()) {
-            List<Location> freeLocations =
-                nextFieldState.getFreeAdjacentLocations(getLocation());
-
-            if(!freeLocations.isEmpty()) {
-                giveBirth(currentField, nextFieldState, freeLocations);
-            }
-
-            Location nextLocation = findFood(currentField);
-            if(nextLocation == null && !freeLocations.isEmpty()) {
-                nextLocation = freeLocations.remove(0);
-            }
-
-            if(nextLocation != null) {
-                setLocation(nextLocation);
-                nextFieldState.placeDinosaur(this, nextLocation);
-            }
-            else {
-                // If nowhere to move, just stay put (prevents predators dying in crowds)
-                Location here = getLocation();
-                if(here != null && nextFieldState.getDinosaurAt(here) == null) {
-                    nextFieldState.placeDinosaur(this, here);
-                } else {
-                    setDead();
-                }
+        if(!free.isEmpty()) {
+            int births = breed(currentField);
+            for(int b = 0; b < births && !free.isEmpty(); b++) {
+                Location loc = free.remove(0);
+                nextFieldState.placeDinosaur(new Dilophosaurus(false, loc), loc);
             }
         }
-    }
 
-    private void incrementAge()
-    {
-        age++;
-        if(age > MAX_AGE) {
-            setDead();
-        }
-    }
+        Location next = findFood(currentField);
+        if(next == null && !free.isEmpty()) next = free.remove(0);
 
-    private Location findFood(Field field)
-    {
-        // Only hunts at night (sleeps in day)
-        if(TimeManager.isDay()) return null;
-    
-        List<Location> adjacent = field.getAdjacentLocations(getLocation());
-    
-        // Strong at night + fog success penalty
-        double timeMod = 1.15 * WeatherManager.predatorHuntModifier();
-    
-        for(Location loc : adjacent) {
-            Dinosaur prey = field.getDinosaurAt(loc);
-            if(prey == null || !prey.isAlive()) continue;
-    
-            // Dilophosaurus hunts Iguanadon only (your current rule)
-            if(prey instanceof Iguanadon) {
-                if(tryKill(prey, BASE_KILL_CHANCE, timeMod)) {
-                    prey.setDead();
-                    restoreToFullEnergy();
-                    return loc;
-                }
-            }
-        }
-        return null;
-    }
-
-    private void giveBirth(Field currentField, Field nextFieldState, List<Location> freeLocations)
-    {
-        int births = breed(currentField);
-        if(births > 0) {
-            consumeEnergy(births * ENERGY_COST_PER_BABY);
-
-            for(int b = 0; b < births && !freeLocations.isEmpty() && isAlive(); b++) {
-                Location loc = freeLocations.remove(0);
-                Dilophosaurus young = new Dilophosaurus(false, loc);
-                nextFieldState.placeDinosaur(young, loc);
+        if(next != null) {
+            setLocation(next);
+            nextFieldState.placeDinosaur(this, next);
+        } else {
+            Location here = getLocation();
+            if(here != null && nextFieldState.getDinosaurAt(here) == null) {
+                nextFieldState.placeDinosaur(this, here);
+            } else {
+                setDead();
             }
         }
     }
@@ -154,19 +71,42 @@ public class Dilophosaurus extends Carnivore
     private int breed(Field currentField)
     {
         if(!canBreedThisStep()) return 0;
+
+        SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
+        if(getEnergy() < t.breedingEnergyThreshold) return 0;
         if(!isFemale()) return 0;
-        if(!canBreed()) return 0;
-        if(getEnergy() < BREEDING_ENERGY_THRESHOLD) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
 
-        if(rand.nextDouble() <= BREEDING_PROBABILITY) {
-            return rand.nextInt(MAX_LITTER_SIZE) + 1;
-        }
-        return 0;
+        if(Randomizer.getRandom().nextDouble() > t.breedingProbability) return 0;
+
+        int births = Randomizer.getRandom().nextInt(Math.max(1, t.maxLitterSize)) + 1;
+        consumeEnergy(births * Math.max(0, t.energyCostPerBaby));
+        if(!isAlive()) return 0;
+        return births;
     }
 
-    private boolean canBreed()
+    // ENTIRE findFood
+    private Location findFood(Field field)
     {
-        return age >= BREEDING_AGE;
+        SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
+        if(t.huntOnlyAtNight && TimeManager.isDay()) return null;
+
+        List<Location> adjacent = field.getAdjacentLocations(getLocation());
+        double timeMod = timeKillMod();
+
+        for(Location loc : adjacent) {
+            Dinosaur prey = field.getDinosaurAt(loc);
+            if(prey == null || !prey.isAlive()) continue;
+
+            // your current targeting rule: Dilo hunts Iguanadon
+            if(prey instanceof Iguanadon) {
+                if(tryKill(prey, t.baseKillChance, timeMod)) {
+                    prey.setDead();
+                    restoreToFullEnergy();
+                    return loc;
+                }
+            }
+        }
+        return null;
     }
 }

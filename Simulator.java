@@ -16,7 +16,42 @@ public class Simulator
     private Field field;
     private int step;
     private final SimulatorView view;
+    
+    
+    //For tuning stuff
+    private volatile boolean running = false;
+    private Thread runnerThread;    
+    
+    //TUNING METHODS
+        public void openTuningWindow()
+    {
+        new TuningWindow(this);
+    }
+    
+    public void startContinuous()
+    {
+        if(running) return;
+        running = true;
+    
+        runnerThread = new Thread(() -> {
+            while(running && field.isViable()) {
+                simulateOneStep();
+                delay(Tuning.simDelayMs);
+            }
+            running = false;
+        });
+    
+        runnerThread.setDaemon(true);
+        runnerThread.start();
+    }
+    
+    public void stopContinuous()
+    {
+        running = false;
+    }
+    //END OF TUNING METHODS
 
+    
     public Simulator()
     {
         this(DEFAULT_DEPTH, DEFAULT_WIDTH);

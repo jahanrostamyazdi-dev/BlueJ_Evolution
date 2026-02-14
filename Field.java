@@ -86,6 +86,27 @@ public class Field
         return locations;
     }
 
+    public List<Location> getLocationsWithinRadius(Location center, int radius)
+    {
+        List<Location> locs = new java.util.ArrayList<>();
+        if(center == null) return locs;
+    
+        for(int dr = -radius; dr <= radius; dr++) {
+            for(int dc = -radius; dc <= radius; dc++) {
+                if(dr == 0 && dc == 0) continue;
+    
+                int r = center.row() + dr;
+                int c = center.col() + dc;
+    
+                if(r >= 0 && r < depth && c >= 0 && c < width) {
+                    locs.add(new Location(r, c));
+                }
+            }
+        }
+        java.util.Collections.shuffle(locs, Randomizer.getRandom());
+        return locs;
+    }
+    
     public void fieldStats()
     {
         int numAllosaurs = 0, numIguanadons = 0;
@@ -164,13 +185,12 @@ public class Field
      * Consume up to 'amount' vegetation at a tile.
      * @return how much was actually consumed.
      */
-    public int consumeVegetationAt(Location location, int amount)
+    public int consumeVegetationAt(Location loc, int amount)
     {
-        if(amount <= 0) return 0;
-        int r = location.row();
-        int c = location.col();
+        int r = loc.row();
+        int c = loc.col();
         int available = vegetation[r][c];
-        int taken = Math.min(available, amount);
+        int taken = Math.min(available, Math.max(0, amount));
         vegetation[r][c] = available - taken;
         return taken;
     }

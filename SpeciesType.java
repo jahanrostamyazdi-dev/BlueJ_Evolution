@@ -1,0 +1,9 @@
+public enum SpeciesType
+{
+    ALLOSAURUS,
+    CARNOTAURUS,
+    DILOPHOSAURUS,
+    IGUANADON,
+    DIABLOCERATOPS,
+    ANKYLOSAURUS
+}
