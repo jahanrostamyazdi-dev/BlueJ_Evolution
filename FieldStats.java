@@ -1,42 +1,31 @@
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * This class collects and provides some statistical data on the state 
- * of a field. It is flexible: it will create and maintain a counter 
- * for any class of object that is found within the field.
- * 
- * @author David J. Barnes and Michael Kölling
- * @version 7.0
+/*
+ * Collects population stats for the UI / console.
+ * It lazily counts stuff when asked (because counting every placement is annoying).
  */
 public class FieldStats
 {
-    // Counters for each type of entity (allosaurus, iguanadon, etc.) in the simulation.
     private final Map<Class<?>, Counter> counters;
-    // Whether the counters are currently up to date.
     private boolean countsValid;
 
-    /**
-     * Construct a FieldStats object.
-     */
+    // Starts empty
     public FieldStats()
     {
-        // Set up a collection for counters for each type of dinosaur that
-        // we might find
         counters = new HashMap<>();
         countsValid = true;
     }
 
-    /**
-     * Get details of what is in the field.
-     * @return A string describing what is in the field.
-     */
+    // Returns a string like "Allosaurus: 10 Iguanadon: 50 ..."
     public String getPopulationDetails(Field field)
     {
         StringBuilder details = new StringBuilder();
+
         if(!countsValid) {
             generateCounts(field);
         }
+
         for(Class<?> key : counters.keySet()) {
             Counter info = counters.get(key);
             details.append(info.getName())
@@ -44,13 +33,11 @@ public class FieldStats
                    .append(info.getCount())
                    .append(' ');
         }
+
         return details.toString();
     }
-    
-    /**
-     * Invalidate the current set of statistics; reset all 
-     * counts to zero.
-     */
+
+    // Marks stats as invalid and zeros counters (next call will regenerate)
     public void reset()
     {
         countsValid = false;
@@ -60,58 +47,43 @@ public class FieldStats
         }
     }
 
-    /**
-     * Increment the count for one class of dinosaur.
-     * @param dinosaurClass The class of dinosaur to increment.
-     */
+    // Adds one count for the given class
     public void incrementCount(Class<?> dinosaurClass)
     {
         Counter count = counters.get(dinosaurClass);
         if(count == null) {
-            // We do not have a counter for this species yet.
-            // Create one.
             count = new Counter(dinosaurClass.getName());
             counters.put(dinosaurClass, count);
         }
         count.increment();
     }
 
-    /**
-     * Indicate that a dinosaur count has been completed.
-     */
+    // Marks counting as finished
     public void countFinished()
     {
         countsValid = true;
     }
 
-    /**
-     * Determine whether the simulation is still viable.
-     * I.e., should it continue to run.
-     * @return true If there is more than one species alive.
-     */
+    // The sim is viable if both herb + carn are present (delegates to Field)
     public boolean isViable(Field field)
     {
         return field.isViable();
     }
-    
-    /**
-     * Generate counts of the number of allosaurs and iguanadons.
-     * These are not kept up to date as allosaurs and iguanadons
-     * are placed in the field, but only when a request
-     * is made for the information.
-     * @param field The field to generate the stats for.
-     */
+
+    // Counts everything currently in the field
     private void generateCounts(Field field)
     {
         reset();
+
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
-                Dinosaur dinosaur = field.getDinosaurAt(new Location(row, col));
-                if(dinosaur != null) {
-                    incrementCount(dinosaur.getClass());
+                Dinosaur d = field.getDinosaurAt(new Location(row, col));
+                if(d != null) {
+                    incrementCount(d.getClass());
                 }
             }
         }
+
         countsValid = true;
     }
 }

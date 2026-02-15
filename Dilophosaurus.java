@@ -1,13 +1,17 @@
 import java.util.List;
 
+/*
+ * Dilophosaurus predator.
+ * Special rule: can be "night only" hunter, so it basically chills during the day.
+ */
 public class Dilophosaurus extends Carnivore
 {
     public Dilophosaurus(boolean randomAge, Location location)
     {
         super(location, Tuning.get(SpeciesType.DILOPHOSAURUS).maxEnergy);
+
         if(randomAge) {
-            int start = (int)(getMaxEnergy() * 0.60);
-            setEnergy(start);
+            setEnergy((int)(getMaxEnergy() * 0.60));
         }
     }
 
@@ -17,15 +21,18 @@ public class Dilophosaurus extends Carnivore
         return Tuning.get(SpeciesType.DILOPHOSAURUS).attack;
     }
 
+    // Dilo gets a strong night modifier and (usually) zero day mod if night-only is enabled
     private double timeKillMod()
     {
         SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
-        // hunts only at night: day modifier effectively 0
+
         double mod = TimeManager.isNight() ? t.nightKillMod : t.dayKillMod;
+
         mod *= WeatherManager.predatorHuntModifier();
         return mod;
     }
 
+    // One sim step: drain energy, maybe sleep in day, breed, hunt, move
     public void act(Field currentField, Field nextFieldState)
     {
         consumeEnergy(Tuning.get(SpeciesType.DILOPHOSAURUS).stepEnergyLoss);
@@ -33,7 +40,6 @@ public class Dilophosaurus extends Carnivore
 
         SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
 
-        // Sleep/day behaviour: if day, just stay put (no hunting/movement)
         if(t.huntOnlyAtNight && TimeManager.isDay()) {
             Location here = getLocation();
             if(here != null && nextFieldState.getDinosaurAt(here) == null) {
@@ -68,11 +74,13 @@ public class Dilophosaurus extends Carnivore
         }
     }
 
+    // Breeding rules (same style as other carnivores)
     private int breed(Field currentField)
     {
         if(!canBreedThisStep()) return 0;
 
         SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
+
         if(getEnergy() < t.breedingEnergyThreshold) return 0;
         if(!isFemale()) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
@@ -82,10 +90,11 @@ public class Dilophosaurus extends Carnivore
         int births = Randomizer.getRandom().nextInt(Math.max(1, t.maxLitterSize)) + 1;
         consumeEnergy(births * Math.max(0, t.energyCostPerBaby));
         if(!isAlive()) return 0;
+
         return births;
     }
 
-    // ENTIRE findFood
+    // Finds prey (Dilo just hunts Iguanadon in this version)
     private Location findFood(Field field)
     {
         SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
@@ -98,7 +107,6 @@ public class Dilophosaurus extends Carnivore
             Dinosaur prey = field.getDinosaurAt(loc);
             if(prey == null || !prey.isAlive()) continue;
 
-            // your current targeting rule: Dilo hunts Iguanadon
             if(prey instanceof Iguanadon) {
                 if(tryKill(prey, t.baseKillChance, timeMod)) {
                     prey.setDead();
@@ -107,6 +115,7 @@ public class Dilophosaurus extends Carnivore
                 }
             }
         }
+
         return null;
     }
 }

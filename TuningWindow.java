@@ -2,15 +2,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.function.Consumer;
 
-/**
- * Interactive tuning window for live parameter adjustment.
- * Tabs: Global + each Species. Controls: Apply, Run/Pause, Step, Reset.
+/*
+ * Tuning window for changing values while the sim runs.
+ * Has a "global" tab and one tab per species.
+ * This started as a quick UI and then grew a bit lol.
  */
 public class TuningWindow extends JFrame
 {
     private final Simulator simulator;
 
-    // Controls
     private final JButton runBtn = new JButton("Run");
     private final JButton pauseBtn = new JButton("Pause");
     private final JButton stepBtn = new JButton("Step");
@@ -19,11 +19,14 @@ public class TuningWindow extends JFrame
 
     private final JTabbedPane tabs = new JTabbedPane();
 
-    // global widgets
     private JSpinner delayMs;
     private JSpinner vegInitMin, vegInitMax, vegRegrowChance, vegGrowDay, vegGrowNight;
     private JSpinner seedInf, outbreakChance;
     private JSpinner pAllo, pCarno, pDilo, pIgu, pDiablo, pAnky;
+
+    // Stores per-species "apply" hooks (one per tab basically)
+    private final java.util.Map<SpeciesType, Consumer<SpeciesTuning>> speciesApply =
+            new java.util.EnumMap<>(SpeciesType.class);
 
     public TuningWindow(Simulator simulator)
     {
@@ -51,6 +54,7 @@ public class TuningWindow extends JFrame
         wireButtons();
     }
 
+    // Bottom button bar
     private JPanel buildBottomBar()
     {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
@@ -62,18 +66,22 @@ public class TuningWindow extends JFrame
         return p;
     }
 
+    // Hooks up button actions
     private void wireButtons()
     {
         applyBtn.addActionListener(e -> applyAll());
+
         resetBtn.addActionListener(e -> {
             simulator.stopContinuous();
             simulator.reset();
         });
+
         stepBtn.addActionListener(e -> simulator.simulateOneStep());
         runBtn.addActionListener(e -> simulator.startContinuous());
         pauseBtn.addActionListener(e -> simulator.stopContinuous());
     }
 
+    // Builds the global tab
     private JPanel buildGlobalPanel()
     {
         JPanel panel = new JPanel(new GridBagLayout());
@@ -122,6 +130,7 @@ public class TuningWindow extends JFrame
         return panel;
     }
 
+    // Builds one species tab and registers an apply hook for that species
     private JPanel buildSpeciesPanel(SpeciesType type)
     {
         SpeciesTuning t = Tuning.get(type);
@@ -130,11 +139,9 @@ public class TuningWindow extends JFrame
         GridBagConstraints gc = baseGC();
         int r = 0;
 
-        // Energy
         JSpinner maxEnergy = spinnerInt(t.maxEnergy, 1, 200, 1);
         JSpinner stepLoss = spinnerInt(t.stepEnergyLoss, 0, 10, 1);
 
-        // Breeding
         JSpinner breedingAge = spinnerInt(t.breedingAge, 0, 200, 1);
         JSpinner breedProb = spinnerDouble(t.breedingProbability, 0.0, 1.0, 0.01);
         JSpinner maxLitter = spinnerInt(t.maxLitterSize, 0, 20, 1);
@@ -151,9 +158,11 @@ public class TuningWindow extends JFrame
         addRow(panel, gc, r++, "Breed energy threshold", breedEnergy);
         addRow(panel, gc, r++, "Energy cost/baby", babyCost);
 
-        // Carnivore vs Herbivore fields
-        if(type == SpeciesType.ALLOSAURUS || type == SpeciesType.CARNOTAURUS || type == SpeciesType.DILOPHOSAURUS) {
+        boolean carn = (type == SpeciesType.ALLOSAURUS || type == SpeciesType.CARNOTAURUS || type == SpeciesType.DILOPHOSAURUS);
+
+        if(carn) {
             addSeparator(panel, gc, r++);
+
             JSpinner attack = spinnerInt(t.attack, 0, 50, 1);
             JSpinner baseKill = spinnerDouble(t.baseKillChance, 0.0, 1.0, 0.01);
             JSpinner dayMod = spinnerDouble(t.dayKillMod, 0.0, 2.0, 0.01);
@@ -169,7 +178,6 @@ public class TuningWindow extends JFrame
             panel.add(nightOnly, gc);
             r++;
 
-            // Apply-to-tuning on Apply press (captured)
             attachApplyHook(type, s -> {
                 s.maxEnergy = (int) maxEnergy.getValue();
                 s.stepEnergyLoss = (int) stepLoss.getValue();
@@ -185,9 +193,10 @@ public class TuningWindow extends JFrame
                 s.nightKillMod = (double) nightMod.getValue();
                 s.huntOnlyAtNight = nightOnly.isSelected();
             });
-
-        } else {
+        }
+        else {
             addSeparator(panel, gc, r++);
+
             JSpinner defence = spinnerInt(t.defence, 0, 50, 1);
             JSpinner biteSize = spinnerInt(t.biteSize, 0, 200, 1);
             JSpinner energyPerVeg = spinnerInt(t.energyPerVeg, 1, 50, 1);
@@ -228,24 +237,15 @@ public class TuningWindow extends JFrame
         return panel;
     }
 
-    // --- Apply mechanism: one hook per species ---
-    private final java.util.Map<SpeciesType, Consumer<SpeciesTuning>> speciesApply = new java.util.EnumMap<>( emulateEnumMap() );
-
-    // tiny helper because BlueJ sometimes hates diamond inference in EnumMap in some setups
-    private java.util.EnumMap<SpeciesType, Consumer<SpeciesTuning>> emulateEnumMap() {
-        return new java.util.EnumMap<>(SpeciesType.class);
-    }
-
+    // Registers a hook that runs when Apply is pressed
     private void attachApplyHook(SpeciesType type, Consumer<SpeciesTuning> hook)
     {
-        if(speciesApply instanceof java.util.EnumMap) {
-            ((java.util.EnumMap<SpeciesType, Consumer<SpeciesTuning>>)speciesApply).put(type, hook);
-        }
+        speciesApply.put(type, hook);
     }
 
+    // Copies UI values back into Tuning
     private void applyAll()
     {
-        // Global
         Tuning.simDelayMs = (int) delayMs.getValue();
 
         Tuning.vegInitialMin = (int) vegInitMin.getValue();
@@ -260,18 +260,20 @@ public class TuningWindow extends JFrame
         Tuning.pAllosaurus = (double) pAllo.getValue();
         Tuning.pCarnotaurus = (double) pCarno.getValue();
         Tuning.pDilophosaurus = (double) pDilo.getValue();
+
         Tuning.pIguanadon = (double) pIgu.getValue();
         Tuning.pDiabloceratops = (double) pDiablo.getValue();
         Tuning.pAnkylosaurus = (double) pAnky.getValue();
 
-        // Species
         for(SpeciesType st : SpeciesType.values()) {
-            Consumer<SpeciesTuning> hook = ((java.util.EnumMap<SpeciesType, Consumer<SpeciesTuning>>)speciesApply).get(st);
+            Consumer<SpeciesTuning> hook = speciesApply.get(st);
             if(hook != null) hook.accept(Tuning.get(st));
         }
+
+        // System.out.println("[tuning] applied");
     }
 
-    // --- UI helpers ---
+    // GridBag default settings (makes layout easier)
     private GridBagConstraints baseGC()
     {
         GridBagConstraints gc = new GridBagConstraints();
@@ -282,14 +284,17 @@ public class TuningWindow extends JFrame
         return gc;
     }
 
+    // Adds a label + component row
     private void addRow(JPanel panel, GridBagConstraints gc, int row, String label, JComponent comp)
     {
         gc.gridx = 0; gc.gridy = row; gc.gridwidth = 1;
         panel.add(new JLabel(label), gc);
+
         gc.gridx = 1; gc.gridy = row;
         panel.add(comp, gc);
     }
 
+    // Adds a horizontal separator
     private void addSeparator(JPanel panel, GridBagConstraints gc, int row)
     {
         gc.gridx = 0; gc.gridy = row; gc.gridwidth = 2;
@@ -297,11 +302,13 @@ public class TuningWindow extends JFrame
         panel.add(sep, gc);
     }
 
+    // Int spinner helper
     private JSpinner spinnerInt(int value, int min, int max, int step)
     {
         return new JSpinner(new SpinnerNumberModel(value, min, max, step));
     }
 
+    // Double spinner helper
     private JSpinner spinnerDouble(double value, double min, double max, double step)
     {
         return new JSpinner(new SpinnerNumberModel(value, min, max, step));

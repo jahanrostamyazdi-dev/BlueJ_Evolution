@@ -4,6 +4,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.HashMap;
 
+/*
+ * UI window that draws the field as a grid of colours.
+ * Also shows a legend with counts and infected counts.
+ * Night mode darkens everything and infected dinos get a purple-ish tint.
+ */
 public class SimulatorView extends JFrame
 {
     private static final Color GRID_BORDER_DAY = Color.lightGray;
@@ -12,13 +17,11 @@ public class SimulatorView extends JFrame
     private static final Color NIGHT_GRID_BORDER = new Color(40, 40, 40);
     private static final Color NIGHT_TEXT_COLOR = new Color(230, 230, 230);
 
-    // Infection tint (applied as blend)
     private static final Color INFECTION_TINT = new Color(160, 60, 200);
     private static final float INFECTION_BLEND = 0.45f;
 
     private final JLabel stepLabel;
     private final FieldView fieldView;
-
     private final JPanel legendPanel;
 
     private final Map<Class<?>, Color> colors;
@@ -27,11 +30,13 @@ public class SimulatorView extends JFrame
     private final Map<Class<?>, Integer> stepCounts = new HashMap<>();
     private final Map<Class<?>, Integer> infectedCounts = new HashMap<>();
 
+    // Makes the window and sets up the grid + legend layout
     public SimulatorView(int height, int width)
     {
         stats = new FieldStats();
         colors = new LinkedHashMap<>();
 
+        // base colours (I just picked ones that look different)
         setColor(Iguanadon.class, Color.orange);
         setColor(Allosaurus.class, Color.blue);
         setColor(Carnotaurus.class, Color.red);
@@ -59,11 +64,13 @@ public class SimulatorView extends JFrame
         setVisible(true);
     }
 
+    // Sets base colour for a species
     public void setColor(Class<?> dinosaurClass, Color color)
     {
         colors.put(dinosaurClass, color);
     }
 
+    // Gets base colour (fallback to grey if missing)
     private Color getColor(Class<?> dinosaurClass)
     {
         Color col = colors.get(dinosaurClass);
@@ -71,11 +78,13 @@ public class SimulatorView extends JFrame
         return col;
     }
 
+    // Simple overload (defaults)
     public void showStatus(int step, Field field)
     {
         showStatus(step, field, TimeOfDay.DAY, WeatherState.CLEAR);
     }
 
+    // Updates the title/labels and redraws the grid
     public void showStatus(int step, Field field, TimeOfDay timeOfDay, WeatherState weather)
     {
         if(!isVisible()) setVisible(true);
@@ -95,20 +104,18 @@ public class SimulatorView extends JFrame
         for(int row = 0; row < field.getDepth(); row++) {
             for(int col = 0; col < field.getWidth(); col++) {
                 Location loc = new Location(row, col);
-                Dinosaur dinosaur = field.getDinosaurAt(loc);
+                Dinosaur d = field.getDinosaurAt(loc);
 
-                if(dinosaur != null) {
-                    stats.incrementCount(dinosaur.getClass());
+                if(d != null) {
+                    stats.incrementCount(d.getClass());
 
-                    stepCounts.put(dinosaur.getClass(),
-                            stepCounts.getOrDefault(dinosaur.getClass(), 0) + 1);
+                    stepCounts.put(d.getClass(), stepCounts.getOrDefault(d.getClass(), 0) + 1);
 
-                    if(dinosaur.isInfected()) {
-                        infectedCounts.put(dinosaur.getClass(),
-                                infectedCounts.getOrDefault(dinosaur.getClass(), 0) + 1);
+                    if(d.isInfected()) {
+                        infectedCounts.put(d.getClass(), infectedCounts.getOrDefault(d.getClass(), 0) + 1);
                     }
 
-                    fieldView.drawMark(col, row, getColorForDinosaur(dinosaur));
+                    fieldView.drawMark(col, row, getColorForDino(d));
                 }
                 else {
                     int veg = field.getVegetationAt(loc);
@@ -118,31 +125,30 @@ public class SimulatorView extends JFrame
         }
 
         stats.countFinished();
-        updateLegendWithCounts(night);
+        updateLegend(night);
 
         fieldView.repaint();
     }
 
-    private Color getColorForDinosaur(Dinosaur dinosaur)
+    // Final colour for a dino = base colour + sex brightness + infection tint
+    private Color getColorForDino(Dinosaur dino)
     {
-        Color base = getColor(dinosaur.getClass());
+        Color base = getColor(dino.getClass());
 
-        // sex brightness
-        float factor = dinosaur.isFemale() ? 1.30f : 0.80f;
-        Color sexColor = adjustBrightness(base, factor);
+        float factor = dino.isFemale() ? 1.30f : 0.80f;
+        Color sexCol = adjustBrightness(base, factor);
 
-        // infection tint overlay
-        if(dinosaur.isInfected()) {
-            return blend(sexColor, INFECTION_TINT, INFECTION_BLEND);
+        if(dino.isInfected()) {
+            return blend(sexCol, INFECTION_TINT, INFECTION_BLEND);
         }
-        return sexColor;
+        return sexCol;
     }
 
+    // Turns veg amount (0..100) into a colour (night is darker)
     private Color getVegetationColor(int veg, boolean night)
     {
         float t = Math.max(0f, Math.min(1f, veg / 100f));
 
-        // brown -> green
         float hue = 0.10f + (0.33f - 0.10f) * t;
         float sat = 0.10f + 0.75f * t;
         float bri = 0.10f + 0.80f * t;
@@ -152,7 +158,8 @@ public class SimulatorView extends JFrame
         return Color.getHSBColor(hue, sat, clamp01(bri));
     }
 
-    private void updateLegendWithCounts(boolean night)
+    // Rebuilds the legend panel (counts change every frame)
+    private void updateLegend(boolean night)
     {
         legendPanel.removeAll();
         legendPanel.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
@@ -165,19 +172,19 @@ public class SimulatorView extends JFrame
         carnRow.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
         herbRow.setBackground(night ? NIGHT_EMPTY_COLOR : Color.white);
 
-        carnRow.add(createLegendItemWithCount("Allosaurus", Allosaurus.class, night));
-        carnRow.add(createLegendItemWithCount("Carnotaurus", Carnotaurus.class, night));
-        carnRow.add(createLegendItemWithCount("Dilophosaurus", Dilophosaurus.class, night));
+        carnRow.add(makeLegendItem("Allosaurus", Allosaurus.class, night));
+        carnRow.add(makeLegendItem("Carnotaurus", Carnotaurus.class, night));
+        carnRow.add(makeLegendItem("Dilophosaurus", Dilophosaurus.class, night));
 
         JSeparator sep1 = new JSeparator(SwingConstants.HORIZONTAL);
         sep1.setForeground(night ? NIGHT_GRID_BORDER : GRID_BORDER_DAY);
         sep1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
 
-        herbRow.add(createLegendItemWithCount("Iguanadon", Iguanadon.class, night));
-        herbRow.add(createLegendItemWithCount("Diabloceratops", Diabloceratops.class, night));
-        herbRow.add(createLegendItemWithCount("Ankylosaurus", Ankylosaurus.class, night));
+        herbRow.add(makeLegendItem("Iguanadon", Iguanadon.class, night));
+        herbRow.add(makeLegendItem("Diabloceratops", Diabloceratops.class, night));
+        herbRow.add(makeLegendItem("Ankylosaurus", Ankylosaurus.class, night));
 
-        JPanel vegRow = createVegetationLegendRow(night);
+        JPanel vegRow = makeVegetationLegendRow(night);
 
         legendPanel.add(wrapWithPadding(carnRow, 4, 6, 4, 6, night));
         legendPanel.add(sep1);
@@ -194,7 +201,8 @@ public class SimulatorView extends JFrame
         legendPanel.repaint();
     }
 
-    private JPanel createVegetationLegendRow(boolean night)
+    // Builds the vegetation key row
+    private JPanel makeVegetationLegendRow(boolean night)
     {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         row.setOpaque(true);
@@ -213,6 +221,7 @@ public class SimulatorView extends JFrame
         return row;
     }
 
+    // Adds a coloured square + number for one veg level
     private void addVegKey(JPanel row, int value, boolean night)
     {
         Color col = getVegetationColor(value, night);
@@ -233,7 +242,8 @@ public class SimulatorView extends JFrame
         row.add(item);
     }
 
-    private JPanel createLegendItemWithCount(String name, Class<?> speciesClass, boolean night)
+    // Creates one legend entry with male/female colour and counts
+    private JPanel makeLegendItem(String name, Class<?> speciesClass, boolean night)
     {
         Color base = getColor(speciesClass);
         Color maleColor = adjustBrightness(base, 0.80f);
@@ -272,6 +282,7 @@ public class SimulatorView extends JFrame
         return item;
     }
 
+    // Wraps rows so spacing looks less cramped
     private JPanel wrapWithPadding(JPanel row, int top, int left, int bottom, int right, boolean night)
     {
         JPanel wrapper = new JPanel(new BorderLayout());
@@ -282,6 +293,7 @@ public class SimulatorView extends JFrame
         return wrapper;
     }
 
+    // Brightness helper (HSB makes it easy)
     private Color adjustBrightness(Color color, float factor)
     {
         float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
@@ -289,11 +301,13 @@ public class SimulatorView extends JFrame
         return Color.getHSBColor(hsb[0], hsb[1], newB);
     }
 
+    // clamp 0..1
     private float clamp01(float v)
     {
         return Math.max(0f, Math.min(1f, v));
     }
 
+    // Basic linear blend
     private Color blend(Color a, Color b, float t)
     {
         t = clamp01(t);
@@ -303,6 +317,10 @@ public class SimulatorView extends JFrame
         return new Color(r, g, bl);
     }
 
+    /*
+     * Panel that actually draws the grid onto an image buffer.
+     * (Buffering makes repaint faster, otherwise Swing is kinda slow.)
+     */
     private class FieldView extends JPanel
     {
         private final int GRID_VIEW_SCALING_FACTOR = 6;
@@ -313,6 +331,7 @@ public class SimulatorView extends JFrame
         private Graphics g;
         private Image fieldImage;
 
+        // Stores the grid size in cells
         public FieldView(int height, int width)
         {
             gridHeight = height;
@@ -320,12 +339,14 @@ public class SimulatorView extends JFrame
             size = new Dimension(0, 0);
         }
 
+        // Swing asks this when laying out the frame
         public Dimension getPreferredSize()
         {
             return new Dimension(gridWidth * GRID_VIEW_SCALING_FACTOR,
                     gridHeight * GRID_VIEW_SCALING_FACTOR);
         }
 
+        // Prepares the buffer + background
         public void preparePaint(boolean night)
         {
             if(!size.equals(getSize())) {
@@ -344,12 +365,14 @@ public class SimulatorView extends JFrame
             g.fillRect(0, 0, size.width, size.height);
         }
 
+        // Draws one cell
         public void drawMark(int x, int y, Color color)
         {
             g.setColor(color);
             g.fillRect(x * xScale, y * yScale, xScale - 1, yScale - 1);
         }
 
+        // Standard paint hook
         public void paintComponent(Graphics g)
         {
             if(fieldImage != null) {

@@ -1,6 +1,10 @@
 import java.util.List;
 import java.util.Random;
 
+/*
+ * Diabloceratops herbivore.
+ * Similar to iguanadon but older + heavy in rain (sometimes skips movement).
+ */
 public class Diabloceratops extends Herbivore
 {
     private static final Random rand = Randomizer.getRandom();
@@ -31,6 +35,7 @@ public class Diabloceratops extends Herbivore
         return new Diabloceratops(false, loc);
     }
 
+    // Does one sim step (age, eat, breed, move)
     public void act(Field currentField, Field nextFieldState)
     {
         age++;
@@ -46,7 +51,7 @@ public class Diabloceratops extends Herbivore
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
         if(!free.isEmpty()) giveBirth(currentField, nextFieldState, free);
 
-        // Heavy animals move slower in rain
+        // heavy + rain => sometimes it just doesn't move
         if(t.heavy && WeatherManager.getWeather() == WeatherState.RAIN) {
             if(Randomizer.getRandom().nextDouble() < t.rainMoveSkipChance) {
                 Location here = getLocation();

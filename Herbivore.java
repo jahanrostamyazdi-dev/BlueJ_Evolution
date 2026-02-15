@@ -1,6 +1,10 @@
 import java.util.List;
 import java.util.Random;
 
+/*
+ * Base herbivore logic (eat vegetation, move towards veg, breeding helper).
+ * Concrete herbivores implement defence + species type + createYoung.
+ */
 public abstract class Herbivore extends Dinosaur
 {
     private static final Random rand = Randomizer.getRandom();
@@ -10,12 +14,13 @@ public abstract class Herbivore extends Dinosaur
         super(location, maxEnergy);
     }
 
+    // Herbivores have defence value used in carnivore kill chance
     public abstract int getDefence();
+
+    // Used to pull tuning values
     public abstract SpeciesType getSpeciesType();
 
-    /**
-     * Eat vegetation at current tile using tuning parameters.
-     */
+    // Eat vegetation at current position (uses tuning bite size etc)
     protected void eat(Field nextFieldState)
     {
         SpeciesTuning t = Tuning.get(getSpeciesType());
@@ -25,9 +30,7 @@ public abstract class Herbivore extends Dinosaur
         gainEnergy(gained);
     }
 
-    /**
-     * Choose next move: prefer adjacent tile with highest vegetation (among free tiles).
-     */
+    // Chooses the adjacent free tile with most vegetation
     protected Location chooseBestVegetationMove(Field currentField, List<Location> free)
     {
         if(free == null || free.isEmpty()) return null;
@@ -42,13 +45,11 @@ public abstract class Herbivore extends Dinosaur
                 best = loc;
             }
         }
+
         return best;
     }
 
-    /**
-     * Breeding helper: number of births based on tuning, energy threshold,
-     * female + adjacent male requirement, and infection blocking.
-     */
+    // Common breeding logic for herbivores (similar to carnivores)
     protected int breed(Field currentField)
     {
         if(!canBreedThisStep()) return 0;
@@ -57,12 +58,10 @@ public abstract class Herbivore extends Dinosaur
 
         if(getEnergy() < t.breedingEnergyThreshold) return 0;
 
-        // Optional veg gating for breeding (carrying capacity)
         if(t.minVegToBreed > 0) {
             if(currentField.getVegetationAt(getLocation()) < t.minVegToBreed) return 0;
         }
 
-        // Females only + need adjacent male of same species
         if(!isFemale()) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
 
@@ -70,18 +69,18 @@ public abstract class Herbivore extends Dinosaur
 
         int births = rand.nextInt(Math.max(1, t.maxLitterSize)) + 1;
 
-        // Energy cost per baby
         int cost = births * Math.max(0, t.energyCostPerBaby);
         if(cost > 0) consumeEnergy(cost);
 
-        // If cost killed us, births should be 0
         if(!isAlive()) return 0;
         return births;
     }
 
+    // Spawns newborns into free spaces
     protected void giveBirth(Field currentField, Field nextFieldState, List<Location> free)
     {
         int births = breed(currentField);
+
         for(int b = 0; b < births && !free.isEmpty(); b++) {
             Location loc = free.remove(0);
             Dinosaur young = createYoung(loc);
@@ -89,8 +88,6 @@ public abstract class Herbivore extends Dinosaur
         }
     }
 
-    /**
-     * Factory for newborns.
-     */
+    // Newborn factory
     protected abstract Dinosaur createYoung(Location loc);
 }

@@ -1,6 +1,10 @@
 import java.util.List;
 import java.util.Random;
 
+/*
+ * Ankylosaurus herbivore.
+ * Tougher defence + very old age, also heavy in rain like diabloceratops.
+ */
 public class Ankylosaurus extends Herbivore
 {
     private static final Random rand = Randomizer.getRandom();
@@ -46,7 +50,6 @@ public class Ankylosaurus extends Herbivore
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
         if(!free.isEmpty()) giveBirth(currentField, nextFieldState, free);
 
-        // Heavy animals move slower in rain
         if(t.heavy && WeatherManager.getWeather() == WeatherState.RAIN) {
             if(Randomizer.getRandom().nextDouble() < t.rainMoveSkipChance) {
                 Location here = getLocation();

@@ -1,30 +1,26 @@
 import java.util.EnumMap;
 import java.util.Map;
 
-/**
- * Global tuning container. Mutable values used by the debug window.
- * Species code reads parameters from here (instead of static finals).
+/*
+ * Global tuning values + per-species tuning objects.
+ * This is mutable on purpose because the tuning UI updates it live.
  */
 public class Tuning
 {
     private static final Map<SpeciesType, SpeciesTuning> species = new EnumMap<>(SpeciesType.class);
 
-    // --- Global / environment tuning ---
     public static int simDelayMs = 50;
 
-    // vegetation
     public static int vegInitialMin = 60;
     public static int vegInitialMax = 100;
 
-    public static double vegRegrowChance = 0.25;  // per tile per step
+    public static double vegRegrowChance = 0.25;
     public static int vegRegrowAmountDay = 1;
     public static int vegRegrowAmountNight = 1;
 
-    // weather weights + interval (must roughly sum to 1)
     public static int weatherChangeInterval = 60;
     public static double wClear = 0.50, wRain = 0.22, wFog = 0.18, wHeat = 0.10;
 
-    // disease
     public static int infectionMinDuration = 35;
     public static int infectionMaxDuration = 70;
     public static double adjacentSpreadChance = 0.08;
@@ -32,11 +28,9 @@ public class Tuning
     public static int surviveEnergyThreshold = 8;
     public static int immunityDuration = 50;
 
-    // seeding
-    public static int initialInfections = 6;      // set 0 to disable
-    public static double spontaneousOutbreakChance = 0.0; // set small like 0.002 to enable
+    public static int initialInfections = 6;
+    public static double spontaneousOutbreakChance = 0.0;
 
-    // populate probabilities
     public static double pAllosaurus = 0.010;
     public static double pCarnotaurus = 0.008;
     public static double pDilophosaurus = 0.008;
@@ -45,8 +39,8 @@ public class Tuning
     public static double pDiabloceratops = 0.025;
     public static double pAnkylosaurus = 0.020;
 
+    // Default tuning values (these just felt "ok" when testing)
     static {
-        // defaults per species (start reasonable; you will tune them)
         species.put(SpeciesType.ALLOSAURUS, defaultAllo());
         species.put(SpeciesType.CARNOTAURUS, defaultCarno());
         species.put(SpeciesType.DILOPHOSAURUS, defaultDilo());
@@ -56,12 +50,13 @@ public class Tuning
         species.put(SpeciesType.ANKYLOSAURUS, defaultAnky());
     }
 
+    // Gets tuning for a species
     public static SpeciesTuning get(SpeciesType type)
     {
         return species.get(type);
     }
 
-    // --- defaults ---
+    // Default allosaurus settings
     private static SpeciesTuning defaultAllo() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.ALLOSAURUS);
         t.maxEnergy = 22; t.stepEnergyLoss = 1;
@@ -72,6 +67,7 @@ public class Tuning
         return t;
     }
 
+    // Default carnotaurus settings
     private static SpeciesTuning defaultCarno() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.CARNOTAURUS);
         t.maxEnergy = 20; t.stepEnergyLoss = 1;
@@ -82,6 +78,7 @@ public class Tuning
         return t;
     }
 
+    // Default dilo settings (night hunter)
     private static SpeciesTuning defaultDilo() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.DILOPHOSAURUS);
         t.maxEnergy = 18; t.stepEnergyLoss = 1;
@@ -93,6 +90,7 @@ public class Tuning
         return t;
     }
 
+    // Default iguanadon settings
     private static SpeciesTuning defaultIgu() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.IGUANADON);
         t.maxEnergy = 20; t.stepEnergyLoss = 1;
@@ -104,6 +102,7 @@ public class Tuning
         return t;
     }
 
+    // Default diabloceratops settings
     private static SpeciesTuning defaultDiablo() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.DIABLOCERATOPS);
         t.maxEnergy = 24; t.stepEnergyLoss = 1;
@@ -115,6 +114,7 @@ public class Tuning
         return t;
     }
 
+    // Default ankylosaurus settings
     private static SpeciesTuning defaultAnky() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.ANKYLOSAURUS);
         t.maxEnergy = 28; t.stepEnergyLoss = 1;

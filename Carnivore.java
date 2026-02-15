@@ -1,8 +1,9 @@
 import java.util.Random;
 
-/**
- * Carnivore base class with unified attack/defence kill model.
- * Also handles infection transfer when eating infected prey.
+/*
+ * Base carnivore logic.
+ * tryKill(...) uses attack vs prey defence + base kill chance + time modifier.
+ * Also transfers disease if the prey was infected (chance-based).
  */
 public abstract class Carnivore extends Dinosaur
 {
@@ -13,11 +14,10 @@ public abstract class Carnivore extends Dinosaur
         super(location, maxEnergy);
     }
 
+    // Carnivores have attack stat (from tuning)
     public abstract int getAttack();
 
-    /**
-     * successChance = baseChance * (attack/(attack+defence)) * timeOfDayModifier
-     */
+    // Attempts a kill using the formula from the assignment write-up
     protected boolean tryKill(Dinosaur prey, double baseChance, double timeOfDayModifier)
     {
         if(prey == null || !prey.isAlive()) return false;
@@ -38,7 +38,6 @@ public abstract class Carnivore extends Dinosaur
         boolean success = rand.nextDouble() <= chance;
 
         if(success) {
-            // If prey is infected, predator has high chance of becoming infected.
             if(prey.isInfected()) {
                 DiseaseManager.onPredatorAteInfectedPrey(this);
             }

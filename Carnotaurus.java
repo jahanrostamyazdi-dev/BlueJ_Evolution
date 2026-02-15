@@ -1,13 +1,17 @@
 import java.util.List;
 
+/*
+ * Carnotaurus predator.
+ * In this version it hunts Iguanadon mostly and has a bigger day sense radius.
+ */
 public class Carnotaurus extends Carnivore
 {
     public Carnotaurus(boolean randomAge, Location location)
     {
         super(location, Tuning.get(SpeciesType.CARNOTAURUS).maxEnergy);
+
         if(randomAge) {
-            int start = (int)(getMaxEnergy() * 0.60);
-            setEnergy(start);
+            setEnergy((int)(getMaxEnergy() * 0.60));
         }
     }
 
@@ -17,14 +21,18 @@ public class Carnotaurus extends Carnivore
         return Tuning.get(SpeciesType.CARNOTAURUS).attack;
     }
 
+    // Day/night modifier + fog modifier
     private double timeKillMod()
     {
         SpeciesTuning t = Tuning.get(SpeciesType.CARNOTAURUS);
+
         double mod = TimeManager.isNight() ? t.nightKillMod : t.dayKillMod;
         mod *= WeatherManager.predatorHuntModifier();
+
         return mod;
     }
 
+    // One step: drain energy, breed, hunt, move/stay/die
     public void act(Field currentField, Field nextFieldState)
     {
         consumeEnergy(Tuning.get(SpeciesType.CARNOTAURUS).stepEnergyLoss);
@@ -56,11 +64,13 @@ public class Carnotaurus extends Carnivore
         }
     }
 
+    // Breeding rules (same-ish as other predators)
     private int breed(Field currentField)
     {
         if(!canBreedThisStep()) return 0;
 
         SpeciesTuning t = Tuning.get(SpeciesType.CARNOTAURUS);
+
         if(getEnergy() < t.breedingEnergyThreshold) return 0;
         if(!isFemale()) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
@@ -70,10 +80,11 @@ public class Carnotaurus extends Carnivore
         int births = Randomizer.getRandom().nextInt(Math.max(1, t.maxLitterSize)) + 1;
         consumeEnergy(births * Math.max(0, t.energyCostPerBaby));
         if(!isAlive()) return 0;
+
         return births;
     }
 
-    // ENTIRE findFood
+    // Hunts Iguanadon (and uses radius in day)
     private Location findFood(Field field)
     {
         SpeciesTuning t = Tuning.get(SpeciesType.CARNOTAURUS);
@@ -91,7 +102,6 @@ public class Carnotaurus extends Carnivore
             Dinosaur prey = field.getDinosaurAt(loc);
             if(prey == null || !prey.isAlive()) continue;
 
-            // your current targeting rule: Carno hunts Iguanadon
             if(prey instanceof Iguanadon) {
                 if(tryKill(prey, t.baseKillChance, timeMod)) {
                     prey.setDead();
@@ -100,6 +110,7 @@ public class Carnotaurus extends Carnivore
                 }
             }
         }
+
         return null;
     }
 }
