@@ -93,6 +93,7 @@ public class Allosaurus extends Carnivore
         SpeciesTuning t = Tuning.get(SpeciesType.ALLOSAURUS);
 
         if(getEnergy() < t.breedingEnergyThreshold) return 0;
+        if(getAge() < t.breedingAge) return 0;
         if(!isFemale()) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
 

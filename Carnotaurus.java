@@ -36,6 +36,7 @@ public class Carnotaurus extends Carnivore
     public void act(Field currentField, Field nextFieldState)
     {
         consumeEnergy(Tuning.get(SpeciesType.CARNOTAURUS).stepEnergyLoss);
+        incrementAge();
         if(!isAlive()) return;
 
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
@@ -72,6 +73,7 @@ public class Carnotaurus extends Carnivore
         SpeciesTuning t = Tuning.get(SpeciesType.CARNOTAURUS);
 
         if(getEnergy() < t.breedingEnergyThreshold) return 0;
+        if(getAge() < t.breedingAge) return 0;
         if(!isFemale()) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
 

@@ -36,6 +36,7 @@ public class Dilophosaurus extends Carnivore
     public void act(Field currentField, Field nextFieldState)
     {
         consumeEnergy(Tuning.get(SpeciesType.DILOPHOSAURUS).stepEnergyLoss);
+        incrementAge();
         if(!isAlive()) return;
 
         SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);

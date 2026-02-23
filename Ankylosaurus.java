@@ -8,13 +8,15 @@ import java.util.Random;
 public class Ankylosaurus extends Herbivore
 {
     private static final Random rand = Randomizer.getRandom();
-    private int age;
 
     public Ankylosaurus(boolean randomAge, Location location)
     {
         super(location, Tuning.get(SpeciesType.ANKYLOSAURUS).maxEnergy);
-        age = randomAge ? rand.nextInt(90) : 0;
-        if(randomAge) setEnergy((int)(getMaxEnergy() * 0.60));
+        if (randomAge)
+        {
+            setAge(rand.nextInt(90));
+            setEnergy((int)(getMaxEnergy() * 0.60));
+        }
     }
 
     @Override
@@ -37,8 +39,8 @@ public class Ankylosaurus extends Herbivore
 
     public void act(Field currentField, Field nextFieldState)
     {
-        age++;
-        if(age > 120) { setDead(); return; }
+        incrementAge();
+        if(getAge() > 120) { setDead(); return; }
 
         SpeciesTuning t = Tuning.get(SpeciesType.ANKYLOSAURUS);
 

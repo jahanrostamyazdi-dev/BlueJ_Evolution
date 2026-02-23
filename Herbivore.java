@@ -57,6 +57,7 @@ public abstract class Herbivore extends Dinosaur
         SpeciesTuning t = Tuning.get(getSpeciesType());
 
         if(getEnergy() < t.breedingEnergyThreshold) return 0;
+        if(getAge() < t.breedingAge) return 0;
 
         if(t.minVegToBreed > 0) {
             if(currentField.getVegetationAt(getLocation()) < t.minVegToBreed) return 0;

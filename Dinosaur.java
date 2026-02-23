@@ -22,6 +22,8 @@ public abstract class Dinosaur
     private int infectionTimer;
     private int immunityTimer;
 
+    private int age;
+
     // Makes a dinosaur with max energy and random sex
     public Dinosaur(Location location, int maxEnergy)
     {
@@ -36,6 +38,8 @@ public abstract class Dinosaur
         this.infected = false;
         this.infectionTimer = 0;
         this.immunityTimer = 0;
+
+        this.age = 0;
     }
 
     // Each dinosaur decides what to do per step
@@ -187,5 +191,20 @@ public abstract class Dinosaur
     public boolean canBreedThisStep()
     {
         return isAlive() && !infected;
+    }
+
+    public void incrementAge()
+    {
+        age++;
+    }
+
+    public int getAge()
+    {
+        return age;
+    }
+
+    public void setAge(int newAge)
+    {
+        this.age = Math.max(0, newAge);
     }
 }

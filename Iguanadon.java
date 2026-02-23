@@ -8,14 +8,16 @@ import java.util.Random;
 public class Iguanadon extends Herbivore
 {
     private static final Random rand = Randomizer.getRandom();
-    private int age;
 
     // Makes one at location (randomAge just picks a random starting age/energy)
     public Iguanadon(boolean randomAge, Location location)
     {
         super(location, Tuning.get(SpeciesType.IGUANADON).maxEnergy);
-        age = randomAge ? rand.nextInt(40) : 0;
-        if(randomAge) setEnergy((int)(getMaxEnergy() * 0.60));
+        if (randomAge)
+        {
+            setAge(rand.nextInt(40));
+            setEnergy((int)(getMaxEnergy() * 0.60));
+        }
 
         // System.out.println("[spawn] igu age=" + age + " loc=" + location);
     }
@@ -44,8 +46,8 @@ public class Iguanadon extends Herbivore
     // One step of behaviour (age, drain energy, eat, breed, move)
     public void act(Field currentField, Field nextFieldState)
     {
-        age++;
-        if(age > 40) { setDead(); return; }
+        incrementAge();
+        if(getAge() > 40) { setDead(); return; }
 
         SpeciesTuning t = Tuning.get(SpeciesType.IGUANADON);
 

@@ -8,13 +8,15 @@ import java.util.Random;
 public class Diabloceratops extends Herbivore
 {
     private static final Random rand = Randomizer.getRandom();
-    private int age;
 
     public Diabloceratops(boolean randomAge, Location location)
     {
         super(location, Tuning.get(SpeciesType.DIABLOCERATOPS).maxEnergy);
-        age = randomAge ? rand.nextInt(60) : 0;
-        if(randomAge) setEnergy((int)(getMaxEnergy() * 0.60));
+        if (randomAge)
+        {
+            setAge(rand.nextInt(60));
+            setEnergy((int)(getMaxEnergy() * 0.60));
+        }
     }
 
     @Override
@@ -38,8 +40,8 @@ public class Diabloceratops extends Herbivore
     // Does one sim step (age, eat, breed, move)
     public void act(Field currentField, Field nextFieldState)
     {
-        age++;
-        if(age > 70) { setDead(); return; }
+        incrementAge();
+        if(getAge() > 70) { setDead(); return; }
 
         SpeciesTuning t = Tuning.get(SpeciesType.DIABLOCERATOPS);
 
