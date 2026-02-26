@@ -46,13 +46,13 @@ public class Iguanadon extends Herbivore
     // One step of behaviour (age, drain energy, eat, breed, move)
     public void act(Field currentField, Field nextFieldState)
     {
-        incrementAge();
-        if(getAge() > 40) { setDead(); return; }
-
         SpeciesTuning t = Tuning.get(SpeciesType.IGUANADON);
 
         consumeEnergy(t.stepEnergyLoss);
         if(!isAlive()) return;
+
+        incrementAge();
+        if(getAge() > t.maxAge) { setDead(); return; }
 
         eat(nextFieldState);
 

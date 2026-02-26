@@ -14,9 +14,9 @@ public class Tuning
     public static int vegInitialMin = 60;
     public static int vegInitialMax = 100;
 
-    public static double vegRegrowChance = 0.25;
-    public static int vegRegrowAmountDay = 1;
-    public static int vegRegrowAmountNight = 1;
+    public static double vegRegrowChance = 0.65;
+    public static int vegRegrowAmountDay = 3;
+    public static int vegRegrowAmountNight = 3;
 
     public static int weatherChangeInterval = 60;
     public static double wClear = 0.50, wRain = 0.22, wFog = 0.18, wHeat = 0.10;
@@ -25,6 +25,7 @@ public class Tuning
     public static int infectionMaxDuration = 70;
     public static double adjacentSpreadChance = 0.08;
     public static double predatorEatInfectedChance = 0.70;
+    public static int extraInfectedEnergyLoss = 1;
     public static int surviveEnergyThreshold = 8;
     public static int immunityDuration = 50;
 
@@ -32,12 +33,12 @@ public class Tuning
     public static double spontaneousOutbreakChance = 0.0;
 
     public static double pAllosaurus = 0.010;
-    public static double pCarnotaurus = 0.008;
-    public static double pDilophosaurus = 0.008;
+    public static double pCarnotaurus = 0.013;
+    public static double pDilophosaurus = 0.010;
 
     public static double pIguanadon = 0.060;
-    public static double pDiabloceratops = 0.025;
-    public static double pAnkylosaurus = 0.020;
+    public static double pDiabloceratops = 0.045;
+    public static double pAnkylosaurus = 0.030;
 
     // Default tuning values (these just felt "ok" when testing)
     static {
@@ -59,10 +60,10 @@ public class Tuning
     // Default allosaurus settings
     private static SpeciesTuning defaultAllo() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.ALLOSAURUS);
-        t.maxEnergy = 22; t.stepEnergyLoss = 1;
-        t.breedingAge = 15; t.breedingProbability = 0.06; t.maxLitterSize = 2;
-        t.breedingEnergyThreshold = 7; t.energyCostPerBaby = 2;
-        t.attack = 12; t.baseKillChance = 0.75; t.dayKillMod = 1.0; t.nightKillMod = 1.10;
+        t.maxAge = 75; t.maxEnergy = 38; t.stepEnergyLoss = 1;
+        t.breedingAge = 15; t.breedingProbability = 0.21; t.maxLitterSize = 3;
+        t.breedingEnergyThreshold = 6; t.energyCostPerBaby = 3;
+        t.attack = 21; t.baseKillChance = 0.7; t.dayKillMod = 1.0; t.nightKillMod = 0.5;
         t.daySenseRadius = 1; t.nightSenseRadius = 2;
         return t;
     }
@@ -70,10 +71,10 @@ public class Tuning
     // Default carnotaurus settings
     private static SpeciesTuning defaultCarno() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.CARNOTAURUS);
-        t.maxEnergy = 20; t.stepEnergyLoss = 1;
-        t.breedingAge = 14; t.breedingProbability = 0.05; t.maxLitterSize = 2;
+        t.maxAge = 70; t.maxEnergy = 44; t.stepEnergyLoss = 1;
+        t.breedingAge = 10; t.breedingProbability = 0.21; t.maxLitterSize = 2;
         t.breedingEnergyThreshold = 6; t.energyCostPerBaby = 2;
-        t.attack = 11; t.baseKillChance = 0.72; t.dayKillMod = 1.05; t.nightKillMod = 0.95;
+        t.attack = 21; t.baseKillChance = 0.67; t.dayKillMod = 1.2; t.nightKillMod = 0.4;
         t.daySenseRadius = 2; t.nightSenseRadius = 1;
         return t;
     }
@@ -81,10 +82,10 @@ public class Tuning
     // Default dilo settings (night hunter)
     private static SpeciesTuning defaultDilo() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.DILOPHOSAURUS);
-        t.maxEnergy = 18; t.stepEnergyLoss = 1;
-        t.breedingAge = 10; t.breedingProbability = 0.07; t.maxLitterSize = 2;
-        t.breedingEnergyThreshold = 5; t.energyCostPerBaby = 2;
-        t.attack = 9; t.baseKillChance = 0.70; t.dayKillMod = 0.0; t.nightKillMod = 1.15;
+        t.maxAge = 480; t.maxEnergy = 100; t.stepEnergyLoss = 0;
+        t.breedingAge = 10; t.breedingProbability = 0.31; t.maxLitterSize = 3;
+        t.breedingEnergyThreshold = 5; t.energyCostPerBaby = 3;
+        t.attack = 45; t.baseKillChance = 0.70; t.dayKillMod = 0.0; t.nightKillMod = 1.15;
         t.huntOnlyAtNight = true;
         t.daySenseRadius = 0; t.nightSenseRadius = 1;
         return t;
@@ -93,36 +94,38 @@ public class Tuning
     // Default iguanadon settings
     private static SpeciesTuning defaultIgu() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.IGUANADON);
-        t.maxEnergy = 20; t.stepEnergyLoss = 1;
-        t.breedingAge = 5; t.breedingProbability = 0.07; t.maxLitterSize = 3;
+        t.maxAge = 110; t.maxEnergy = 65; t.stepEnergyLoss = 1;
+        t.breedingAge = 7; t.breedingProbability = 0.25; t.maxLitterSize = 3;
         t.breedingEnergyThreshold = 8; t.energyCostPerBaby = 1;
-        t.biteSize = 40; t.energyPerVeg = 6;
-        t.minVegToBreed = 55;
-        t.defence = 4;
+        t.biteSize = 20; t.energyPerVeg = 24;
+        t.minVegToBreed = 2;
+        t.defence = 50;
         return t;
     }
 
     // Default diabloceratops settings
     private static SpeciesTuning defaultDiablo() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.DIABLOCERATOPS);
-        t.maxEnergy = 24; t.stepEnergyLoss = 1;
-        t.breedingAge = 8; t.breedingProbability = 0.08; t.maxLitterSize = 2;
+        t.maxAge = 130; t.maxEnergy = 70; t.stepEnergyLoss = 1;
+        t.breedingAge = 8; t.breedingProbability = 0.27; t.maxLitterSize = 2;
         t.breedingEnergyThreshold = 10; t.energyCostPerBaby = 2;
-        t.biteSize = 32; t.energyPerVeg = 5;
+        t.biteSize = 16; t.energyPerVeg = 20;
+        t.minVegToBreed = 2;
         t.heavy = true; t.rainMoveSkipChance = 0.50;
-        t.defence = 8;
+        t.defence = 50;
         return t;
     }
 
     // Default ankylosaurus settings
     private static SpeciesTuning defaultAnky() {
         SpeciesTuning t = new SpeciesTuning(SpeciesType.ANKYLOSAURUS);
-        t.maxEnergy = 28; t.stepEnergyLoss = 1;
-        t.breedingAge = 12; t.breedingProbability = 0.06; t.maxLitterSize = 1;
+        t.maxAge = 360; t.maxEnergy = 76; t.stepEnergyLoss = 1;
+        t.breedingAge = 12; t.breedingProbability = 0.27; t.maxLitterSize = 2;
         t.breedingEnergyThreshold = 12; t.energyCostPerBaby = 2;
-        t.biteSize = 28; t.energyPerVeg = 5;
+        t.biteSize = 14; t.energyPerVeg = 20;
+        t.minVegToBreed = 2;
         t.heavy = true; t.rainMoveSkipChance = 0.50;
-        t.defence = 12;
+        t.defence = 50;
         return t;
     }
 }

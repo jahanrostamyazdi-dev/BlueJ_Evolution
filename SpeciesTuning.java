@@ -10,6 +10,7 @@ public class SpeciesTuning
     public int stepEnergyLoss = 1;
     public int extraInfectedEnergyLoss = 1;
 
+    public int maxAge = 50;
     public int breedingAge = 5;
     public double breedingProbability = 0.10;
     public int maxLitterSize = 3;

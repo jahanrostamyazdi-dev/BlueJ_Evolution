@@ -10,25 +10,12 @@ public class DiseaseManager
 {
     private static final Random rand = Randomizer.getRandom();
 
-    private static final int INFECTION_MIN_DURATION = 35;
-    private static final int INFECTION_MAX_DURATION = 70;
-
-    private static final double ADJACENT_SPREAD_CHANCE = 0.08;
-    private static final double PREDATOR_EAT_INFECTED_CHANCE = 0.70;
-
-    private static final int EXTRA_ENERGY_DRAIN_WHILE_INFECTED = 1;
-    private static final int SURVIVE_ENERGY_THRESHOLD = 8;
-
-    private static final int IMMUNITY_DURATION = 50;
-
-    private static final double SPONTANEOUS_INFECTION_CHANCE_PER_STEP = 0.002;
-
     private DiseaseManager() {}
 
     // Randomly infects something sometimes (called from Simulator loop)
     public static void maybeStartNewOutbreak(Field field)
     {
-        if(rand.nextDouble() > SPONTANEOUS_INFECTION_CHANCE_PER_STEP) return;
+        if(rand.nextDouble() > Tuning.spontaneousOutbreakChance) return;
 
         List<Dinosaur> dinos = field.getDinosaurs();
         if(dinos.isEmpty()) return;
@@ -43,25 +30,25 @@ public class DiseaseManager
     // Random duration between min/max
     public static int randomInfectionDuration()
     {
-        return INFECTION_MIN_DURATION + rand.nextInt(INFECTION_MAX_DURATION - INFECTION_MIN_DURATION + 1);
+        return Tuning.infectionMinDuration + rand.nextInt(Tuning.infectionMaxDuration - Tuning.infectionMinDuration + 1);
     }
 
     // Extra energy drain for infected dinos
     public static int getExtraEnergyDrainWhileInfected()
     {
-        return EXTRA_ENERGY_DRAIN_WHILE_INFECTED;
+        return Tuning.extraInfectedEnergyLoss;
     }
 
     // Energy needed to survive when the infection ends
     public static int getSurviveEnergyThreshold()
     {
-        return SURVIVE_ENERGY_THRESHOLD;
+        return Tuning.surviveEnergyThreshold;
     }
 
     // Immunity time after surviving infection
     public static int getImmunityDuration()
     {
-        return IMMUNITY_DURATION;
+        return Tuning.immunityDuration;
     }
 
     // Spread check to adjacent neighbours
@@ -75,7 +62,7 @@ public class DiseaseManager
             Dinosaur other = currentField.getDinosaurAt(loc);
             if(other == null || !other.isAlive()) continue;
 
-            if(other.canBeInfected() && rand.nextDouble() < ADJACENT_SPREAD_CHANCE) {
+            if(other.canBeInfected() && rand.nextDouble() < Tuning.adjacentSpreadChance) {
                 other.infect(randomInfectionDuration());
             }
         }
@@ -87,7 +74,7 @@ public class DiseaseManager
         if(predator == null || !predator.isAlive()) return;
         if(!predator.canBeInfected()) return;
 
-        if(rand.nextDouble() < PREDATOR_EAT_INFECTED_CHANCE) {
+        if(rand.nextDouble() < Tuning.predatorEatInfectedChance) {
             predator.infect(randomInfectionDuration());
         }
     }

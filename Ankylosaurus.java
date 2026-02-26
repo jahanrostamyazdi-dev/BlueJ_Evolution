@@ -39,13 +39,13 @@ public class Ankylosaurus extends Herbivore
 
     public void act(Field currentField, Field nextFieldState)
     {
-        incrementAge();
-        if(getAge() > 120) { setDead(); return; }
-
         SpeciesTuning t = Tuning.get(SpeciesType.ANKYLOSAURUS);
 
         consumeEnergy(t.stepEnergyLoss);
         if(!isAlive()) return;
+
+        incrementAge();
+        if(getAge() > t.maxAge) { setDead(); return; }
 
         eat(nextFieldState);
 

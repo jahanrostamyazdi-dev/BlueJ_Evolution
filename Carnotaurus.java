@@ -39,6 +39,9 @@ public class Carnotaurus extends Carnivore
         incrementAge();
         if(!isAlive()) return;
 
+        SpeciesTuning t = Tuning.get(SpeciesType.CARNOTAURUS);
+        if(getAge() > t.maxAge) { setDead(); return; }
+
         List<Location> free = nextFieldState.getFreeAdjacentLocations(getLocation());
 
         if(!free.isEmpty()) {

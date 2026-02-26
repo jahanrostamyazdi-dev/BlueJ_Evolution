@@ -10,15 +10,6 @@ public class Simulator
     private static final int DEFAULT_WIDTH = 120;
     private static final int DEFAULT_DEPTH = 80;
 
-    // spawn probs (left as constants because thats how the original starter had it)
-    private static final double ALLOSAURUS_CREATION_PROBABILITY = 0.010;
-    private static final double CARNOTAURUS_CREATION_PROBABILITY = 0.008;
-    private static final double DILOPHOSAURUS_CREATION_PROBABILITY = 0.008;
-
-    private static final double IGUANADON_CREATION_PROBABILITY = 0.060;
-    private static final double DIABLOCERATOPS_CREATION_PROBABILITY = 0.025;
-    private static final double ANKYLOSAURUS_CREATION_PROBABILITY = 0.020;
-
     private Field field;
     private int step;
     private final SimulatorView view;
@@ -170,25 +161,25 @@ public class Simulator
 
                 double roll = rand.nextDouble();
 
-                if(roll <= ALLOSAURUS_CREATION_PROBABILITY) {
+                if(roll <= Tuning.pAllosaurus) {
                     field.placeDinosaur(new Allosaurus(true, loc), loc);
                 }
-                else if(roll <= ALLOSAURUS_CREATION_PROBABILITY + CARNOTAURUS_CREATION_PROBABILITY) {
+                else if(roll <= Tuning.pAllosaurus + Tuning.pCarnotaurus) {
                     field.placeDinosaur(new Carnotaurus(true, loc), loc);
                 }
-                else if(roll <= ALLOSAURUS_CREATION_PROBABILITY + CARNOTAURUS_CREATION_PROBABILITY + DILOPHOSAURUS_CREATION_PROBABILITY) {
+                else if(roll <= Tuning.pAllosaurus + Tuning.pCarnotaurus + Tuning.pDilophosaurus) {
                     field.placeDinosaur(new Dilophosaurus(true, loc), loc);
                 }
                 else {
                     double herbRoll = rand.nextDouble();
 
-                    if(herbRoll <= IGUANADON_CREATION_PROBABILITY) {
+                    if(herbRoll <= Tuning.pIguanadon) {
                         field.placeDinosaur(new Iguanadon(true, loc), loc);
                     }
-                    else if(herbRoll <= IGUANADON_CREATION_PROBABILITY + DIABLOCERATOPS_CREATION_PROBABILITY) {
+                    else if(herbRoll <= Tuning.pIguanadon + Tuning.pDiabloceratops) {
                         field.placeDinosaur(new Diabloceratops(true, loc), loc);
                     }
-                    else if(herbRoll <= IGUANADON_CREATION_PROBABILITY + DIABLOCERATOPS_CREATION_PROBABILITY + ANKYLOSAURUS_CREATION_PROBABILITY) {
+                    else if(herbRoll <= Tuning.pIguanadon + Tuning.pDiabloceratops + Tuning.pAnkylosaurus) {
                         field.placeDinosaur(new Ankylosaurus(true, loc), loc);
                     }
                 }

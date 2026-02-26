@@ -22,6 +22,8 @@ public class TuningWindow extends JFrame
     private JSpinner delayMs;
     private JSpinner vegInitMin, vegInitMax, vegRegrowChance, vegGrowDay, vegGrowNight;
     private JSpinner seedInf, outbreakChance;
+    private JSpinner infMinDur, infMaxDur, adjSpreadChance, predEatInfChance, extraDrain, surviveThresh, immuneDur;
+    private JSpinner wClearSpinner, wRainSpinner, wFogSpinner, wHeatSpinner;
     private JSpinner pAllo, pCarno, pDilo, pIgu, pDiablo, pAnky;
 
     // Stores per-species "apply" hooks (one per tab basically)
@@ -99,6 +101,19 @@ public class TuningWindow extends JFrame
         seedInf = spinnerInt(Tuning.initialInfections, 0, 200, 1);
         outbreakChance = spinnerDouble(Tuning.spontaneousOutbreakChance, 0.0, 0.05, 0.0005);
 
+        infMinDur = spinnerInt(Tuning.infectionMinDuration, 0, 200, 1);
+        infMaxDur = spinnerInt(Tuning.infectionMaxDuration, 0, 200, 1);
+        adjSpreadChance = spinnerDouble(Tuning.adjacentSpreadChance, 0.0, 1.0, 0.01);
+        predEatInfChance = spinnerDouble(Tuning.predatorEatInfectedChance, 0.0, 1.0, 0.01);
+        extraDrain = spinnerInt(Tuning.extraInfectedEnergyLoss, 0, 10, 1);
+        surviveThresh = spinnerInt(Tuning.surviveEnergyThreshold, 0, 50, 1);
+        immuneDur = spinnerInt(Tuning.immunityDuration, 0, 200, 1);
+
+        wClearSpinner = spinnerDouble(Tuning.wClear, 0.0, 1.0, 0.01);
+        wRainSpinner = spinnerDouble(Tuning.wRain, 0.0, 1.0, 0.01);
+        wFogSpinner = spinnerDouble(Tuning.wFog, 0.0, 1.0, 0.01);
+        wHeatSpinner = spinnerDouble(Tuning.wHeat, 0.0, 1.0, 0.01);
+
         pAllo = spinnerDouble(Tuning.pAllosaurus, 0.0, 0.20, 0.001);
         pCarno = spinnerDouble(Tuning.pCarnotaurus, 0.0, 0.20, 0.001);
         pDilo = spinnerDouble(Tuning.pDilophosaurus, 0.0, 0.20, 0.001);
@@ -118,6 +133,19 @@ public class TuningWindow extends JFrame
 
         addRow(panel, gc, r++, "Initial infections", seedInf);
         addRow(panel, gc, r++, "Spontaneous outbreak chance", outbreakChance);
+        addRow(panel, gc, r++, "Infection min duration", infMinDur);
+        addRow(panel, gc, r++, "Infection max duration", infMaxDur);
+        addRow(panel, gc, r++, "Adjacent spread chance", adjSpreadChance);
+        addRow(panel, gc, r++, "Predator eat infected chance", predEatInfChance);
+        addRow(panel, gc, r++, "Extra energy drain (infected)", extraDrain);
+        addRow(panel, gc, r++, "Survive energy threshold", surviveThresh);
+        addRow(panel, gc, r++, "Immunity duration", immuneDur);
+
+        addSeparator(panel, gc, r++);
+        addRow(panel, gc, r++, "Weather: Clear weight", wClearSpinner);
+        addRow(panel, gc, r++, "Weather: Rain weight", wRainSpinner);
+        addRow(panel, gc, r++, "Weather: Fog weight", wFogSpinner);
+        addRow(panel, gc, r++, "Weather: Heatwave weight", wHeatSpinner);
 
         addSeparator(panel, gc, r++);
         addRow(panel, gc, r++, "Spawn p(Allosaurus)", pAllo);
@@ -141,6 +169,7 @@ public class TuningWindow extends JFrame
 
         JSpinner maxEnergy = spinnerInt(t.maxEnergy, 1, 200, 1);
         JSpinner stepLoss = spinnerInt(t.stepEnergyLoss, 0, 10, 1);
+        JSpinner maxAge = spinnerInt(t.maxAge, 1, 1000, 1);
 
         JSpinner breedingAge = spinnerInt(t.breedingAge, 0, 200, 1);
         JSpinner breedProb = spinnerDouble(t.breedingProbability, 0.0, 1.0, 0.01);
@@ -150,6 +179,7 @@ public class TuningWindow extends JFrame
 
         addRow(panel, gc, r++, "Max energy", maxEnergy);
         addRow(panel, gc, r++, "Energy loss/step", stepLoss);
+        addRow(panel, gc, r++, "Max age", maxAge);
 
         addSeparator(panel, gc, r++);
         addRow(panel, gc, r++, "Breeding age", breedingAge);
@@ -179,6 +209,7 @@ public class TuningWindow extends JFrame
             r++;
 
             attachApplyHook(type, s -> {
+                s.maxAge = (int) maxAge.getValue();
                 s.maxEnergy = (int) maxEnergy.getValue();
                 s.stepEnergyLoss = (int) stepLoss.getValue();
                 s.breedingAge = (int) breedingAge.getValue();
@@ -216,6 +247,7 @@ public class TuningWindow extends JFrame
             addRow(panel, gc, r++, "Rain move skip chance", rainSkip);
 
             attachApplyHook(type, s -> {
+                s.maxAge = (int) maxAge.getValue();
                 s.maxEnergy = (int) maxEnergy.getValue();
                 s.stepEnergyLoss = (int) stepLoss.getValue();
                 s.breedingAge = (int) breedingAge.getValue();
@@ -256,6 +288,18 @@ public class TuningWindow extends JFrame
 
         Tuning.initialInfections = (int) seedInf.getValue();
         Tuning.spontaneousOutbreakChance = (double) outbreakChance.getValue();
+        Tuning.infectionMinDuration = (int) infMinDur.getValue();
+        Tuning.infectionMaxDuration = (int) infMaxDur.getValue();
+        Tuning.adjacentSpreadChance = (double) adjSpreadChance.getValue();
+        Tuning.predatorEatInfectedChance = (double) predEatInfChance.getValue();
+        Tuning.extraInfectedEnergyLoss = (int) extraDrain.getValue();
+        Tuning.surviveEnergyThreshold = (int) surviveThresh.getValue();
+        Tuning.immunityDuration = (int) immuneDur.getValue();
+
+        Tuning.wClear = (double) wClearSpinner.getValue();
+        Tuning.wRain = (double) wRainSpinner.getValue();
+        Tuning.wFog = (double) wFogSpinner.getValue();
+        Tuning.wHeat = (double) wHeatSpinner.getValue();
 
         Tuning.pAllosaurus = (double) pAllo.getValue();
         Tuning.pCarnotaurus = (double) pCarno.getValue();

@@ -9,11 +9,6 @@ public class WeatherManager
 {
     private static final int CHANGE_INTERVAL = 60;
 
-    private static final double W_CLEAR = 0.50;
-    private static final double W_RAIN  = 0.22;
-    private static final double W_FOG   = 0.18;
-    private static final double W_HEAT  = 0.10;
-
     private static final Random rand = Randomizer.getRandom();
 
     private static WeatherState current = WeatherState.CLEAR;
@@ -92,13 +87,13 @@ public class WeatherManager
     private static WeatherState rollNextWeather()
     {
         double r = rand.nextDouble();
-        if(r < W_CLEAR) return WeatherState.CLEAR;
+        if(r < Tuning.wClear) return WeatherState.CLEAR;
 
-        r -= W_CLEAR;
-        if(r < W_RAIN) return WeatherState.RAIN;
+        r -= Tuning.wClear;
+        if(r < Tuning.wRain) return WeatherState.RAIN;
 
-        r -= W_RAIN;
-        if(r < W_FOG) return WeatherState.FOG;
+        r -= Tuning.wRain;
+        if(r < Tuning.wFog) return WeatherState.FOG;
 
         return WeatherState.HEATWAVE;
     }

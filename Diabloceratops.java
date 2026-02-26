@@ -40,13 +40,13 @@ public class Diabloceratops extends Herbivore
     // Does one sim step (age, eat, breed, move)
     public void act(Field currentField, Field nextFieldState)
     {
-        incrementAge();
-        if(getAge() > 70) { setDead(); return; }
-
         SpeciesTuning t = Tuning.get(SpeciesType.DIABLOCERATOPS);
 
         consumeEnergy(t.stepEnergyLoss);
         if(!isAlive()) return;
+
+        incrementAge();
+        if(getAge() > t.maxAge) { setDead(); return; }
 
         eat(nextFieldState);
 

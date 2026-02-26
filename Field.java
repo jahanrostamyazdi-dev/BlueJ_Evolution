@@ -172,6 +172,7 @@ public class Field
     // Returns the internal list (Simulator uses it)
     public List<Dinosaur> getDinosaurs()
     {
+        dinosaurs.removeIf(d -> d == null || !d.isAlive());
         return dinosaurs;
     }
 
@@ -207,15 +208,14 @@ public class Field
     // Regrow vegetation with time/weather effects
     public void regrowVegetation(TimeOfDay timeOfDay, WeatherState weather)
     {
-        double p = 0.25;
+        double pScaled = Tuning.vegRegrowChance;
 
-        // (day/night amount currently same but I left it as a variable)
-        int baseGrow = (timeOfDay == TimeOfDay.NIGHT) ? 1 : 1;
+        int baseGrow = (timeOfDay == TimeOfDay.NIGHT) ? Tuning.vegRegrowAmountNight : Tuning.vegRegrowAmountDay;
 
         double mult = WeatherManager.vegetationRegrowMultiplier();
         int cap = WeatherManager.vegetationCap();
 
-        double pScaled = p * mult;
+        pScaled = pScaled * mult;
         if(pScaled > 0.85) pScaled = 0.85;
 
         int grow = baseGrow;
@@ -255,9 +255,13 @@ public class Field
     // Random start veg (so herbivores don't instantly die)
     private void randomizeVegetation()
     {
+        int min = Tuning.vegInitialMin;
+        int max = Tuning.vegInitialMax;
+        int range = Math.max(1, max - min + 1);
+
         for(int r = 0; r < depth; r++) {
             for(int c = 0; c < width; c++) {
-                vegetation[r][c] = 60 + rand.nextInt(41);
+                vegetation[r][c] = min + rand.nextInt(range);
             }
         }
 

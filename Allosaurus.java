@@ -48,7 +48,11 @@ public class Allosaurus extends Carnivore
     public void act(Field currentField, Field nextFieldState)
     {
         consumeEnergy(Tuning.get(SpeciesType.ALLOSAURUS).stepEnergyLoss);
+        incrementAge();
         if(!isAlive()) return;
+
+        SpeciesTuning t = Tuning.get(SpeciesType.ALLOSAURUS);
+        if(getAge() > t.maxAge) { setDead(); return; }
 
         // free spaces in NEXT field (so we don't collide)
         List<Location> freeLocs = nextFieldState.getFreeAdjacentLocations(getLocation());

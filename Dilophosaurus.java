@@ -40,6 +40,7 @@ public class Dilophosaurus extends Carnivore
         if(!isAlive()) return;
 
         SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
+        if(getAge() > t.maxAge) { setDead(); return; }
 
         if(t.huntOnlyAtNight && TimeManager.isDay()) {
             Location here = getLocation();
@@ -83,6 +84,7 @@ public class Dilophosaurus extends Carnivore
         SpeciesTuning t = Tuning.get(SpeciesType.DILOPHOSAURUS);
 
         if(getEnergy() < t.breedingEnergyThreshold) return 0;
+        if(getAge() < t.breedingAge) return 0;
         if(!isFemale()) return 0;
         if(!hasAdjacentMaleOfSameSpecies(currentField)) return 0;
 
